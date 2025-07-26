@@ -22,7 +22,7 @@ const connectionStatus = document.getElementById("connection-status");
 const typingIndicator = document.getElementById("typing-indicator");
 const startAudioButton = document.getElementById("startAudioButton");
 const stopAudioButton = document.getElementById("stopAudioButton");
-const recordingContainer = document.getElementById("recording-container");
+const recordingStatus = document.getElementById("recording-status");
 
 // WebSocket handlers
 function connectWebsocket() {
@@ -272,10 +272,11 @@ function stopAudio() {
 // (due to the gesture requirement for the Web Audio API)
 startAudioButton.addEventListener("click", () => {
   startAudioButton.disabled = true;
-  startAudioButton.textContent = "Voice Enabled";
+  startAudioButton.innerHTML = '<i class="fas fa-microphone-slash"></i>';
+  startAudioButton.classList.add("recording");
   startAudioButton.style.display = "none";
   stopAudioButton.style.display = "inline-block";
-  recordingContainer.style.display = "flex";
+  recordingStatus.classList.add("active");
   startAudio();
   is_audio = true;
 
@@ -291,8 +292,9 @@ stopAudioButton.addEventListener("click", () => {
   stopAudioButton.style.display = "none";
   startAudioButton.style.display = "inline-block";
   startAudioButton.disabled = false;
-  startAudioButton.textContent = "Enable Voice";
-  recordingContainer.style.display = "none";
+  startAudioButton.innerHTML = '<i class="fas fa-microphone"></i>';
+  startAudioButton.classList.remove("recording");
+  recordingStatus.classList.remove("active");
 
   // Remove audio styling class
   messagesDiv.classList.remove("audio-enabled");
