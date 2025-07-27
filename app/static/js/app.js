@@ -23,6 +23,120 @@ const typingIndicator = document.getElementById("typing-indicator");
 const startAudioButton = document.getElementById("startAudioButton");
 const stopAudioButton = document.getElementById("stopAudioButton");
 const recordingStatus = document.getElementById("recording-status");
+const attachButton = document.getElementById("attachButton");
+const fileInput = document.getElementById("fileInput");
+const attachedFilesContainer = document.getElementById("attachedFiles");
+
+// File attachment variables
+let attachedFiles = [];
+
+// File attachment functionality
+attachButton.addEventListener("click", () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener("change", (event) => {
+  const files = Array.from(event.target.files);
+  files.forEach(file => {
+    if (!attachedFiles.find(f => f.name === file.name && f.size === file.size)) {
+      attachedFiles.push(file);
+    }
+  });
+  updateAttachedFilesDisplay();
+  // Reset file input to allow selecting the same file again
+  fileInput.value = '';
+});
+
+function updateAttachedFilesDisplay() {
+  if (attachedFiles.length === 0) {
+    attachedFilesContainer.classList.remove("has-files");
+    attachedFilesContainer.innerHTML = '';
+    return;
+  }
+
+  attachedFilesContainer.classList.add("has-files");
+  attachedFilesContainer.innerHTML = attachedFiles.map((file, index) => {
+    const fileIcon = getFileIcon(file.type, file.name);
+    const fileSize = formatFileSize(file.size);
+    return `
+      <div class="attached-file">
+        <i class="file-icon ${fileIcon}"></i>
+        <span class="file-name">${file.name}</span>
+        <span class="file-size">${fileSize}</span>
+        <button type="button" class="remove-file" data-index="${index}">
+          <i class="fas fa-times"></i>
+        </button>
+      </div>
+    `;
+  }).join('');
+
+  // Add event listeners for remove buttons
+  attachedFilesContainer.querySelectorAll('.remove-file').forEach(button => {
+    button.addEventListener('click', (e) => {
+      const index = parseInt(e.currentTarget.dataset.index);
+      attachedFiles.splice(index, 1);
+      updateAttachedFilesDisplay();
+    });
+  });
+}
+
+function getFileIcon(mimeType, fileName) {
+  const ext = fileName.split('.').pop().toLowerCase();
+
+  if (mimeType.startsWith('image/')) {
+    return 'fas fa-image';
+  } else if (ext === 'pdf') {
+    return 'fas fa-file-pdf';
+  } else if (ext === 'docx' || ext === 'doc') {
+    return 'fas fa-file-word';
+  } else if (ext === 'txt') {
+    return 'fas fa-file-alt';
+  } else {
+    return 'fas fa-file';
+  }
+}
+
+function formatFileSize(bytes) {
+  if (bytes === 0) return '0 Bytes';
+  const k = 1024;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+}
+
+async function uploadFiles() {
+  if (attachedFiles.length === 0) return [];
+
+  const uploadedFiles = [];
+
+  for (const file of attachedFiles) {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    try {
+      const response = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        uploadedFiles.push({
+          filename: result.filename,
+          original_name: file.name,
+          mime_type: file.type,
+          size: file.size
+        });
+      } else {
+        console.error('Failed to upload file:', file.name);
+      }
+    } catch (error) {
+      console.error('Error uploading file:', file.name, error);
+    }
+  }
+
+  return uploadedFiles;
+}
 
 // WebSocket handlers
 function connectWebsocket() {
@@ -168,24 +282,59 @@ connectWebsocket();
 
 // Add submit handler to the form
 function addSubmitHandler() {
-  messageForm.onsubmit = function (e) {
+  messageForm.onsubmit = async function (e) {
     e.preventDefault();
     const message = messageInput.value;
-    if (message) {
+    const hasFiles = attachedFiles.length > 0;
+
+    if (message || hasFiles) {
+      // Upload files first if any
+      let uploadedFiles = [];
+      if (hasFiles) {
+        uploadedFiles = await uploadFiles();
+      }
+
+      // Display user message
       const p = document.createElement("p");
-      p.textContent = message;
+      p.textContent = message || "(Files attached)";
       p.className = "user-message";
       messagesDiv.appendChild(p);
+
+      // Show attached files in the message if any
+      if (uploadedFiles.length > 0) {
+        const filesList = document.createElement("div");
+        filesList.className = "message-files";
+        filesList.innerHTML = uploadedFiles.map(file => `
+          <div class="message-file">
+            <i class="${getFileIcon(file.mime_type, file.original_name)}"></i>
+            <span>${file.original_name}</span>
+          </div>
+        `).join('');
+        messagesDiv.appendChild(filesList);
+      }
+
       messageInput.value = "";
+
+      // Clear attached files
+      attachedFiles = [];
+      updateAttachedFilesDisplay();
 
       // Show typing indicator after sending message
       typingIndicator.classList.add("visible");
 
-      sendMessage({
+      // Send message with file information
+      const messageData = {
         mime_type: "text/plain",
-        data: message,
+        data: message || "",
         role: "user",
-      });
+      };
+
+      // Add file information if files were uploaded
+      if (uploadedFiles.length > 0) {
+        messageData.uploaded_files = uploadedFiles;
+      }
+
+      sendMessage(messageData);
       console.log("[CLIENT TO AGENT] " + message);
       // Scroll down to the bottom of the messagesDiv
       messagesDiv.scrollTop = messagesDiv.scrollHeight;

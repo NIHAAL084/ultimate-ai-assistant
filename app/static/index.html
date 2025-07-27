@@ -348,8 +348,98 @@
       opacity: 0.5;
     }
 
-    #startAudioButton i {
+    #attachButton {
+      background: linear-gradient(135deg, var(--accent-color) 0%, #444444 100%);
+      color: white;
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      padding: 0;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      box-shadow:
+        0 4px 15px rgba(0, 0, 0, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    #attachButton:hover {
+      transform: translateY(-2px) scale(1.05);
+      box-shadow:
+        0 6px 20px rgba(0, 0, 0, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      background: linear-gradient(135deg, #777777 0%, #555555 100%);
+    }
+
+    #attachButton:active {
+      transform: translateY(0) scale(0.98);
+    }
+
+    #attachButton i {
       font-size: 18px;
+    }
+
+    .attached-files-container {
+      padding: 0 0 16px 0;
+      display: none;
+    }
+
+    .attached-files-container.has-files {
+      display: block;
+    }
+
+    .attached-file {
+      display: flex;
+      align-items: center;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 8px;
+      padding: 8px 12px;
+      margin: 4px 0;
+      font-size: 14px;
+      color: var(--text-color);
+    }
+
+    .attached-file .file-icon {
+      margin-right: 8px;
+      color: var(--secondary-color);
+    }
+
+    .attached-file .file-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .attached-file .file-size {
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin: 0 8px;
+    }
+
+    .attached-file .remove-file {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+      width: auto;
+      height: auto;
+    }
+
+    .attached-file .remove-file:hover {
+      color: #ff4444;
+      background: rgba(255, 68, 68, 0.1);
+      transform: none;
+      box-shadow: none;
+    }
+
+    .attached-file .remove-file i {
+      font-size: 12px;
     }
 
     #stopAudioButton {
@@ -574,6 +664,28 @@
       }
     }
 
+    .message-files {
+      margin: 8px 0;
+      padding: 8px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .message-file {
+      display: flex;
+      align-items: center;
+      padding: 4px 0;
+      font-size: 13px;
+      color: var(--text-secondary);
+    }
+
+    .message-file i {
+      margin-right: 8px;
+      color: var(--secondary-color);
+      width: 16px;
+    }
+
     @media (max-width: 600px) {
       .main-container {
         padding: 10px;
@@ -630,6 +742,11 @@
       <div class="input-container">
         <form id="messageForm">
           <input type="text" id="message" name="message" placeholder="Type your message here..." autocomplete="off" />
+          <input type="file" id="fileInput" accept=".pdf,.txt,.docx,.jpg,.jpeg,.png,.gif,.bmp,.svg,.webp" multiple
+            style="display: none;" />
+          <button type="button" id="attachButton">
+            <i class="fas fa-paperclip"></i>
+          </button>
           <button type="submit" id="sendButton" disabled>
             <i class="fas fa-paper-plane"></i>
             <span>Send</span>
@@ -641,6 +758,7 @@
             <i class="fas fa-stop"></i>
           </button>
         </form>
+        <div id="attachedFiles" class="attached-files-container"></div>
       </div>
 
       <div class="status-container">

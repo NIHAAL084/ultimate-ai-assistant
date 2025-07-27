@@ -3,6 +3,8 @@ import base64
 import json
 import os
 import warnings
+import uuid
+import shutil
 from pathlib import Path
 from typing import AsyncIterable
 
@@ -10,7 +12,7 @@ from dotenv import load_dotenv
 
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
 
-from fastapi import FastAPI, Query, WebSocket
+from fastapi import FastAPI, Query, WebSocket, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from google.adk.agents import LiveRequestQueue
@@ -18,6 +20,7 @@ from google.adk.agents.run_config import RunConfig
 from google.adk.events.event import Event
 from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
+from google.adk.artifacts import InMemoryArtifactService
 from google.genai import types
 from .assistant.agent import root_agent
 
@@ -31,6 +34,14 @@ load_dotenv()
 
 APP_NAME = "ADK Streaming example"
 session_service = InMemorySessionService()
+artifact_service = InMemoryArtifactService()
+
+# Create upload directory
+UPLOAD_DIR = Path(__file__).parent / "uploads"
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+# Coordination event for function call completion
+function_call_completed = asyncio.Event()
 
 
 async def start_agent_session(session_id, is_audio=False):
@@ -48,6 +59,7 @@ async def start_agent_session(session_id, is_audio=False):
         app_name=APP_NAME,
         agent=root_agent,
         session_service=session_service,
+        artifact_service=artifact_service,
     )
 
     # Set response modality using enum string values
@@ -144,19 +156,19 @@ async def client_to_agent_messaging(
 ):
     """Client to agent communication"""
     while True:
-        # Decode JSON message
         message_json = await websocket.receive_text()
         message = json.loads(message_json)
         mime_type = message["mime_type"]
-        data = message["data"]
-        role = message.get("role", "user")  # Default to 'user' if role is not provided
+        data = message.get("data", "")
+        role = message.get("role", "user")
 
-        # Send the message to the agent
         if mime_type == "text/plain":
-            # Send a text message
-            content = types.Content(role=role, parts=[types.Part.from_text(text=data)])
+            # Send just the user text - agent will automatically check for uploaded files
+            part = types.Part(text=data or "")
+            content = types.Content(role=role, parts=[part])
             live_request_queue.send_content(content=content)
-            print(f"[CLIENT TO AGENT PRINT]: {data}")
+            print(f"[CLIENT TO AGENT] Sent text: {data}")
+                
         elif mime_type == "audio/pcm":
             # Send audio data
             decoded_data = base64.b64decode(data)
@@ -187,6 +199,29 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 async def root():
     """Serves the index.html"""
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+
+@app.post("/upload")
+async def upload_file(file: UploadFile = File(...)):
+    """Upload endpoint for files"""
+    try:
+        # Use original filename directly
+        file_path = UPLOAD_DIR / file.filename
+        
+        # Save file to disk with original name
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        # Return file information
+        return {
+            "filename": file.filename,
+            "original_name": file.filename,
+            "content_type": file.content_type,
+            "size": file_path.stat().st_size
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to upload file: {str(e)}")
 
 
 @app.websocket("/ws/{session_id}")
