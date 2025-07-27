@@ -23,6 +23,8 @@ from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.adk.artifacts import InMemoryArtifactService
 from google.genai import types
 from .assistant.agent import root_agent
+from .assistant.utils.zep_memory_service import ZepMemoryService
+from .assistant.utils.session_memory_manager import SessionMemoryManager
 from .config import APP_NAME, USER_ID, DEFAULT_VOICE
 
 #
@@ -33,9 +35,19 @@ from .config import APP_NAME, USER_ID, DEFAULT_VOICE
 load_dotenv()
 
 # Session and artifact services
-# Note: Using deterministic session IDs (hash of USER_ID) for consistent user sessions
+# Note: Using random session IDs - ZepMemoryService handles persistence across sessions
 session_service = InMemorySessionService()
 artifact_service = InMemoryArtifactService()
+
+# Initialize Zep Memory Service
+try:
+    memory_service = ZepMemoryService()
+    session_memory_manager = SessionMemoryManager(memory_service)
+    print("✅ ZepMemoryService and SessionMemoryManager initialized successfully")
+except Exception as e:
+    print(f"⚠️ Failed to initialize ZepMemoryService: {e}")
+    memory_service = None
+    session_memory_manager = SessionMemoryManager(None)
 
 # Create upload directory
 UPLOAD_DIR = Path(__file__).parent / "uploads"
@@ -61,6 +73,7 @@ async def start_agent_session(session_id, is_audio=False):
         agent=root_agent,
         session_service=session_service,
         artifact_service=artifact_service,
+        memory_service=memory_service,  # Add Zep memory service
     )
 
     # Set response modality using enum string values
@@ -92,7 +105,7 @@ async def start_agent_session(session_id, is_audio=False):
         live_request_queue=live_request_queue,
         run_config=run_config,
     )
-    return live_events, live_request_queue
+    return live_events, live_request_queue, session
 
 
 async def agent_to_client_messaging(
@@ -153,7 +166,7 @@ async def agent_to_client_messaging(
 
 
 async def client_to_agent_messaging(
-    websocket: WebSocket, live_request_queue: LiveRequestQueue
+    websocket: WebSocket, live_request_queue: LiveRequestQueue, session
 ):
     """Client to agent communication"""
     while True:
@@ -169,6 +182,14 @@ async def client_to_agent_messaging(
             content = types.Content(role=role, parts=[part])
             live_request_queue.send_content(content=content)
             print(f"[CLIENT TO AGENT] Sent text: {data}")
+            
+            # Add user event to session for memory storage
+            user_event = Event(
+                author="user",
+                content=content
+            )
+            session.events.append(user_event)
+            print(f"📝 Added user event to session: {data}")
                 
         elif mime_type == "audio/pcm":
             # Send audio data
@@ -247,7 +268,7 @@ async def websocket_endpoint(
     print(f"Client #{session_id} connected, audio mode: {is_audio}")
 
     # Start agent session
-    live_events, live_request_queue = await start_agent_session(
+    live_events, live_request_queue, session = await start_agent_session(
         session_id, is_audio == "true"
     )
 
@@ -256,9 +277,24 @@ async def websocket_endpoint(
         agent_to_client_messaging(websocket, live_events)
     )
     client_to_agent_task = asyncio.create_task(
-        client_to_agent_messaging(websocket, live_request_queue)
+        client_to_agent_messaging(websocket, live_request_queue, session)
     )
-    await asyncio.gather(agent_to_client_task, client_to_agent_task)
-
-    # Disconnected
-    print(f"Client #{session_id} disconnected")
+    
+    try:
+        await asyncio.gather(agent_to_client_task, client_to_agent_task)
+    except Exception as e:
+        # Handle WebSocket disconnections gracefully
+        print(f"WebSocket connection ended for client #{session_id}: {e}")
+    finally:
+        # Always try to save session on disconnect, regardless of how the connection ended
+        print(f"Client #{session_id} disconnected")
+        
+        # Automatically save session to Zep memory on disconnect
+        try:
+            if session and session_memory_manager:
+                await session_memory_manager.auto_save_session(session)
+                print(f"💾 Session {session_id} processing complete for memory storage")
+            else:
+                print(f"⚠️ Session {session_id} not available or no memory manager available")
+        except Exception as e:
+            print(f"⚠️ Failed to save session {session_id} to memory on disconnect: {e}")

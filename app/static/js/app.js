@@ -13,29 +13,24 @@ let websocket = null;
 let is_audio = false;
 let currentMessageId = null; // Track the current message ID during a conversation turn
 
-// Hash function to generate consistent session ID from user ID
-async function hashString(str) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(str);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-  return hashHex.substring(0, 16); // Use first 16 characters for session ID
+// Generate random session ID for each conversation
+// Now that we have ZepMemoryService, we don't need deterministic session IDs
+function generateRandomSessionId() {
+  return 'session_' + Math.random().toString(36).substr(2, 16) + '_' + Date.now().toString(36);
 }
 
-// Initialize session ID from server config
+// Initialize session ID
 async function initializeSession() {
   try {
-    const response = await fetch('/config');
-    const config = await response.json();
-    sessionId = await hashString(config.user_id);
+    // Generate a new random session ID for each conversation
+    sessionId = generateRandomSessionId();
     ws_url = "ws://" + window.location.host + "/ws/" + sessionId;
-    console.log(`Session ID generated from user ${config.user_id}: ${sessionId}`);
+    console.log(`New session ID generated: ${sessionId}`);
     return true;
   } catch (error) {
     console.error('Failed to initialize session:', error);
-    // Fallback to random session ID
-    sessionId = Math.random().toString().substring(10);
+    // Fallback to simpler random session ID
+    sessionId = 'fallback_' + Math.random().toString().substring(2);
     ws_url = "ws://" + window.location.host + "/ws/" + sessionId;
     return false;
   }

@@ -29,8 +29,10 @@ A powerful AI assistant built with Google ADK (Agent Development Kit) that provi
 - Audio and text input support with PCM audio streaming
 - File upload with drag-and-drop interface
 - Streaming responses with turn management and interruption handling
-- **Deterministic Session IDs**: Consistent user sessions via USER_ID hash
-- **Persistent Context**: Same user reconnects to same session automatically
+- **Random Session IDs**: Each conversation gets a unique session identifier
+- **Memory-Driven Persistence**: Zep memory service handles cross-session continuity
+- **Isolated Conversations**: Each browser session represents a separate conversation
+- **Long-term Memory**: User context persists via ZepMemoryService across all sessions
 
 ### 🛠️ Tools Architecture
 
@@ -45,6 +47,14 @@ A powerful AI assistant built with Google ADK (Agent Development Kit) that provi
 - **Real-time Datetime**: Agent always knows the current date and time
 - **Context Awareness**: Dynamic prompt generation with current temporal information
 
+### 🧠 Long-term Memory (Zep Integration)
+
+- **Persistent Memory**: Powered by Zep knowledge graph for long-term conversation memory
+- **Automatic Session Storage**: Sessions automatically saved to Zep on disconnect
+- **Smart Memory Recall**: Agent can remember past conversations and user preferences
+- **Memory Search**: Uses `load_memory` tool to search previous interactions
+- **Knowledge Graph**: Zep builds semantic relationships between conversation elements
+
 ## 📁 Project Structure
 
 ```
@@ -55,20 +65,23 @@ ultimate-ai-assistant/
 │   ├── config.py                 # Centralized configuration settings
 │   ├── assistant/
 │   │   ├── __init__.py
-│   │   ├── agent.py              # Main agent with dynamic datetime
+│   │   ├── agent.py              # Main agent with dynamic datetime & memory
 │   │   ├── tools/
 │   │   │   ├── __init__.py       # Unified tool exports
 │   │   │   ├── document_tools.py # Unified document processing (refined)
 │   │   │   └── file_tools.py     # File registration and listing
 │   │   └── utils/
-│   │       └── data_extractor.py # Core extraction functions
+│   │       ├── data_extractor.py      # Core extraction functions
+│   │       ├── zep_memory_service.py  # Zep long-term memory integration
+│   │       └── session_memory_manager.py # Automatic session saving
 │   ├── static/                   # Frontend assets with dithered background
 │   └── uploads/                  # Temporary file storage
 ├── tests/
 │   └── test_data_extractor.py    # Test suite for data extraction
+├── test_zep_integration.py       # Zep memory integration test
 ├── pyproject.toml                # UV project configuration
 ├── uv.lock                       # UV lockfile
-├── .env                          # Environment variables
+├── .env                          # Environment variables (includes ZEP_API_KEY)
 └── README.md                     # This file
 ```
 
@@ -100,6 +113,7 @@ ultimate-ai-assistant/
 
    ```env
    GOOGLE_API_KEY=your_gemini_api_key_here
+   ZEP_API_KEY=your_zep_api_key_here
    ```
 
 4. **Install system dependencies** (for OCR):
@@ -175,6 +189,8 @@ The application will be available at:
 - **Combined Query**: "Based on the uploaded report, search for recent news on this topic"
 - **File Inventory**: "What files do I have available?" or "Show me my uploaded documents"
 - **Multi-format**: "Process all my uploaded documents and create a summary"
+- **Memory Recall**: "What do you remember about me?" or "What did we discuss in our last conversation?"
+- **Context Building**: Tell the AI your preferences, then in a new session ask it to recall them
 
 ## Agent Behavior
 
@@ -259,12 +275,29 @@ DEFAULT_PORT = 8001         # Server port number
 DEFAULT_VOICE = "Puck"      # Voice for audio responses
 ```
 
+### Zep Memory Configuration
+
+Set up your Zep API key in the `.env` file:
+
+```bash
+# Get your API key from https://getzep.com/
+ZEP_API_KEY=your-zep-api-key-here
+```
+
+**Zep Features:**
+
+- **Knowledge Graph**: Builds semantic relationships from conversations
+- **Automatic Storage**: Sessions saved automatically on WebSocket disconnect
+- **Memory Search**: Agent can recall past interactions using `load_memory` tool
+- **User Persistence**: Same USER_ID maintains conversation history across sessions
+
 ### Session Management
 
-- **Deterministic Session IDs**: Generated from SHA-256 hash of USER_ID
-- **Consistent Sessions**: Same user always gets the same session ID
-- **No Memory Service Dependency**: User sessions persist through deterministic IDs
-- **Frontend Integration**: Client fetches USER_ID from `/config` endpoint
+- **Random Session IDs**: Each conversation gets a unique identifier for isolation
+- **ZepMemoryService**: Long-term memory handles user context across sessions
+- **Automatic Session Saving**: Conversations stored to Zep on disconnect/refresh
+- **Memory Recall**: Agent can search previous conversations using `load_memory` tool
+- **User Persistence**: Same USER_ID maintains conversation history across all sessions
 
 ### Agent Configuration
 
@@ -370,11 +403,26 @@ Stream Response to User
 - **websockets**: WebSocket communication protocol
 - **python-dotenv**: Environment variable management
 
+### Memory & AI Services
+
+- **zep-cloud**: Zep cloud service for long-term memory and knowledge graphs
+- **zep-python**: Zep Python client library for memory integration
+
 ### Optional Enhancements
 
 - **tesseract**: System-level OCR engine (required for scanned PDFs)
 
 ## Recent Improvements
+
+### v2.1 Updates
+
+- ✅ **Zep Memory Integration**: Long-term conversation memory with knowledge graphs
+- ✅ **Automatic Session Storage**: Sessions saved to Zep on disconnect/refresh
+- ✅ **Memory Recall Tool**: Agent can remember past conversations using `load_memory`
+- ✅ **Session Memory Manager**: Intelligent session saving with content validation
+- ✅ **Random Session IDs**: Unique session per conversation for proper isolation
+- ✅ **Enhanced User Event Tracking**: Manual user event registration for memory storage
+- ✅ **Async Memory Operations**: Full async compatibility with ADK framework
 
 ### v2.0 Updates
 
@@ -387,7 +435,6 @@ Stream Response to User
 - ✅ **Improved Architecture**: Object-oriented design with proper separation
 - ✅ **Native Vision**: Direct image processing without separate tools
 - ✅ **Centralized Configuration**: All settings in `config.py` with consistent imports
-- ✅ **Deterministic Sessions**: Hash-based session IDs for persistent user context
 
 ### Architecture Refinements
 

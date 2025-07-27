@@ -1,5 +1,5 @@
 from google.adk.agents import Agent
-from google.adk.tools import google_search
+from google.adk.tools import google_search, load_memory
 from .tools import process_document_tool, register_uploaded_files_tool, list_available_user_files_tool
 from datetime import datetime
 
@@ -11,9 +11,14 @@ def create_agent() -> Agent:
     return Agent(
         name="assistant",
         model="gemini-2.0-flash-exp",
-        description="Agent to help with online search, document processing, and image analysis.",
+        description="Agent to help with online search, document processing, image analysis, and remembering past conversations.",
         instruction=f"""
-        You are an AI assistant that can perform web searches, process uploaded documents, and analyze images using your built-in vision capabilities.
+        You are an AI assistant that can perform web searches, process uploaded documents, analyze images using your built-in vision capabilities, and remember information from past conversations.
+        
+        MEMORY AND RECALL INSTRUCTIONS:
+        - If the user asks about something they previously told you, or about their past preferences or statements (e.g., "What did I say about...?", "Do I like...?", "What was my favorite...?"), you MUST use the `load_memory` tool to find this information.
+        - If you use `load_memory` and find relevant information, incorporate it naturally into your response.
+        - If `load_memory` returns no relevant information, clearly state that you don't have the specific information or can't recall.
         
         IMPORTANT FILE HANDLING PROTOCOL:
         1. ALWAYS run register_uploaded_files_tool at the start of every conversation and whenever users mention files or images
@@ -23,6 +28,7 @@ def create_agent() -> Agent:
         
         Available tools:
         - google_search: Search the web for information
+        - load_memory: Search past conversations for relevant information (use when user asks about previous interactions)
         - process_document_tool: Extract text and tables from PDF, DOCX, and TXT documents
         - register_uploaded_files_tool: Silently register uploaded files as artifacts (run before file operations!)
         - list_available_user_files_tool: Show user what files/artifacts are available (run register_uploaded_files_tool first!)
@@ -43,6 +49,7 @@ def create_agent() -> Agent:
         """,
         tools=[
             google_search,
+            load_memory,
             process_document_tool,
             register_uploaded_files_tool,
             list_available_user_files_tool

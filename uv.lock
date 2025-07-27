@@ -1727,6 +1727,8 @@ dependencies = [
     { name = "uvicorn" },
     { name = "websockets" },
     { name = "wrapt" },
+    { name = "zep-cloud" },
+    { name = "zep-python" },
     { name = "zipp" },
 ]
 
@@ -1807,6 +1809,8 @@ requires-dist = [
     { name = "uvicorn", specifier = "==0.34.2" },
     { name = "websockets", specifier = "==15.0.1" },
     { name = "wrapt", specifier = "==1.17.2" },
+    { name = "zep-cloud", specifier = "==2.12.1" },
+    { name = "zep-python", specifier = "==2.0.2" },
     { name = "zipp", specifier = "==3.21.0" },
 ]
 
@@ -1961,6 +1965,34 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/6a/e1/0122853035b40b3f333bbb25f1939fc1045e21dd518f7f0922b60c156f7c/wrapt-1.17.2-cp313-cp313t-win32.whl", hash = "sha256:13e6afb7fe71fe7485a4550a8844cc9ffbe263c0f1a1eea569bc7091d4898555", size = 37986, upload-time = "2025-01-14T10:35:00.498Z" },
     { url = "https://files.pythonhosted.org/packages/09/5e/1655cf481e079c1f22d0cabdd4e51733679932718dc23bf2db175f329b76/wrapt-1.17.2-cp313-cp313t-win_amd64.whl", hash = "sha256:eaf675418ed6b3b31c7a989fd007fa7c3be66ce14e5c3b27336383604c9da85c", size = 40750, upload-time = "2025-01-14T10:35:03.378Z" },
     { url = "https://files.pythonhosted.org/packages/2d/82/f56956041adef78f849db6b289b282e72b55ab8045a75abad81898c28d19/wrapt-1.17.2-py3-none-any.whl", hash = "sha256:b18f2d1533a71f069c7f82d524a52599053d4c7166e9dd374ae2136b7f40f7c8", size = 23594, upload-time = "2025-01-14T10:35:44.018Z" },
+]
+
+[[package]]
+name = "zep-cloud"
+version = "2.12.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/eb/36/e309319b934162cff9dc681336c7b8585bf09a89dd0084a636f01d5dcf1e/zep_cloud-2.12.1.tar.gz", hash = "sha256:f8efd4ae3c61aadbe5d52f146b8e775cd6caaeec05999bb1d5e0545c1540f20e", size = 47823, upload-time = "2025-05-01T22:45:02.134Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/e6/5e/aa1f5ec10ca5f05e3e989e79b336b2f181a342c2a86d2078d6fb80900f04/zep_cloud-2.12.1-py3-none-any.whl", hash = "sha256:4e63cbd4603b6fa324660544106cba88338620f7f6b022bf99948ff37cbfec24", size = 93259, upload-time = "2025-05-01T22:44:59.852Z" },
+]
+
+[[package]]
+name = "zep-python"
+version = "2.0.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "httpx" },
+    { name = "pydantic" },
+    { name = "typing-extensions" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b5/64/1b0c4afa6d0e8f35e1072eacdfe8ec216871be5f2dfd569942f69232482f/zep_python-2.0.2.tar.gz", hash = "sha256:919fd635ad5801f30d9ef6da0bb99e854ed4c3cd1357dc8ada4a39b8171a41bc", size = 22273, upload-time = "2024-09-26T14:44:22.847Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/1c/d4/09a6bc0c32f91b7b5b93322513d51299ca9b35bdd6b0560b39104c296f39/zep_python-2.0.2-py3-none-any.whl", hash = "sha256:d7b2cadf1eb15007825362cae5ddff9c9d0ada5b4f75cf91e5b87986459f7817", size = 40011, upload-time = "2024-09-26T14:44:21.492Z" },
 ]
 
 [[package]]
