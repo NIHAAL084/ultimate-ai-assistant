@@ -2,17 +2,26 @@ from google.adk.tools import ToolContext
 from google.genai import types
 from pathlib import Path
 
-async def register_files(tool_context: ToolContext) -> dict:
+
+async def register_uploaded_files(tool_context: ToolContext) -> dict:
     """
-    Automatically scan the uploads folder and register any files as artifacts.
-    Delete files after successful registration.
-    When a file with the same name is uploaded, it creates a new version of the artifact.
+    Automatically scan uploads folder and register any new files as artifacts.
+    
+    Scans the uploads directory for new files and registers them as artifacts for 
+    processing. Supports various file formats including documents (PDF, DOCX, TXT) 
+    and images (JPG, PNG, GIF, WebP, BMP, TIFF). Files are automatically deleted 
+    from uploads after successful registration.
+    
+    This tool should be run before any file operations to ensure all uploaded 
+    files are available as artifacts for processing.
 
     Args:
         tool_context: The ToolContext for saving artifacts.
 
     Returns:
-        A dict summarizing saved files and any errors.
+        A dictionary containing:
+        - registered_files: List of file registration results
+        - message: Status message if no files found
     """
     # Get the uploads directory path
     uploads_dir = Path(__file__).parent.parent.parent / "uploads"
@@ -79,9 +88,48 @@ async def register_files(tool_context: ToolContext) -> dict:
         saved.append(entry)
     
     return {"registered_files": saved}
+
+
+async def list_available_user_files(tool_context: ToolContext) -> str:
+    """
+    List all available artifacts/files that can be processed.
+    
+    Retrieves and displays a formatted list of all files that have been uploaded
+    and registered as artifacts. This includes documents, images, and other files
+    that are available for processing or analysis.
+    
+    IMPORTANT: Always run register_uploaded_files_tool first to ensure the 
+    artifact list is up-to-date with any newly uploaded files.
+    
+    Args:
+        tool_context: The ToolContext for accessing artifacts.
+        
+    Returns:
+        A formatted string listing all available files, or a message indicating
+        no files are available.
+    """
+    try:
+        available_files = await tool_context.list_artifacts()
+        if not available_files:
+            return "You have no saved artifacts."
+        else:
+            # Format the list for the user/LLM
+            file_list_str = "\n".join([f"- {fname}" for fname in available_files])
+            return f"Here are your available artifacts:\n{file_list_str}"
+    except ValueError as e:
+        print(f"Error listing artifacts: {e}. Is ArtifactService configured?")
+        return "Error: Could not list artifacts."
+    except Exception as e:
+        print(f"An unexpected error occurred during artifact list: {e}")
+        return "Error: An unexpected error occurred while listing artifacts."
+
  
-# Wrap register_files into a FunctionTool
+# Wrap functions into FunctionTools
 from google.adk.tools import FunctionTool
-register_files_tool = FunctionTool(
-    func=register_files
+register_uploaded_files_tool = FunctionTool(
+    func=register_uploaded_files
+)
+
+list_available_user_files_tool = FunctionTool(
+    func=list_available_user_files
 )

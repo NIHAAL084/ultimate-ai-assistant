@@ -4,14 +4,14 @@ class DitherBackground {
 
         // Default options matching original Dither implementation
         this.options = {
-            pixelSize: 8.0,              // Medium-sized pixels for clear dithering
+            pixelSize: 0.1,              // Medium-sized pixels for clear dithering
             colorNum: 4,                 // Perfect balance of contrast and smoothness
             waveSpeed: 1.2,              // Slightly faster for more visible movement
             waveFrequency: 1.5,          // More detailed patterns
             waveAmplitude: 2.8,          // Much stronger base animation
             waveColor: [0, 0, 0],
             enableMouseInteraction: true,
-            mouseRadius: 0.5,            // Large interactive area
+            mouseRadius: 0.1,            // Large interactive area
             disableAnimation: false,
             ...options
         };

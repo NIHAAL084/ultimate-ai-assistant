@@ -7,11 +7,39 @@
  */
 
 // Global variables
-const sessionId = Math.random().toString().substring(10);
-const ws_url = "ws://" + window.location.host + "/ws/" + sessionId;
+let sessionId = null;
+let ws_url = null;
 let websocket = null;
 let is_audio = false;
 let currentMessageId = null; // Track the current message ID during a conversation turn
+
+// Hash function to generate consistent session ID from user ID
+async function hashString(str) {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(str);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+  return hashHex.substring(0, 16); // Use first 16 characters for session ID
+}
+
+// Initialize session ID from server config
+async function initializeSession() {
+  try {
+    const response = await fetch('/config');
+    const config = await response.json();
+    sessionId = await hashString(config.user_id);
+    ws_url = "ws://" + window.location.host + "/ws/" + sessionId;
+    console.log(`Session ID generated from user ${config.user_id}: ${sessionId}`);
+    return true;
+  } catch (error) {
+    console.error('Failed to initialize session:', error);
+    // Fallback to random session ID
+    sessionId = Math.random().toString().substring(10);
+    ws_url = "ws://" + window.location.host + "/ws/" + sessionId;
+    return false;
+  }
+}
 
 // Get DOM elements
 const messageForm = document.getElementById("messageForm");
@@ -278,7 +306,15 @@ function connectWebsocket() {
     typingIndicator.classList.remove("visible");
   };
 }
-connectWebsocket();
+
+// Initialize the application
+async function initializeApp() {
+  await initializeSession();
+  connectWebsocket();
+}
+
+// Start the application
+initializeApp();
 
 // Add submit handler to the form
 function addSubmitHandler() {

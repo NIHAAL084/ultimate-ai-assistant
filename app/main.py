@@ -23,6 +23,7 @@ from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.adk.artifacts import InMemoryArtifactService
 from google.genai import types
 from .assistant.agent import root_agent
+from .config import APP_NAME, USER_ID, DEFAULT_VOICE
 
 #
 # ADK Streaming
@@ -31,8 +32,8 @@ from .assistant.agent import root_agent
 # Load Gemini API Key
 load_dotenv()
 
-
-APP_NAME = "ADK Streaming example"
+# Session and artifact services
+# Note: Using deterministic session IDs (hash of USER_ID) for consistent user sessions
 session_service = InMemorySessionService()
 artifact_service = InMemoryArtifactService()
 
@@ -50,7 +51,7 @@ async def start_agent_session(session_id, is_audio=False):
     # Create a Session
     session = await session_service.create_session(
         app_name=APP_NAME,
-        user_id=session_id,
+        user_id=USER_ID,
         session_id=session_id,
     )
 
@@ -69,7 +70,7 @@ async def start_agent_session(session_id, is_audio=False):
     speech_config = types.SpeechConfig(
         voice_config=types.VoiceConfig(
             # Puck, Charon, Kore, Fenrir, Aoede, Leda, Orus, and Zephyr
-            prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name="Puck")
+            prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=DEFAULT_VOICE)
         )
     )
 
@@ -199,6 +200,15 @@ app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 async def root():
     """Serves the index.html"""
     return FileResponse(os.path.join(STATIC_DIR, "index.html"))
+
+
+@app.get("/config")
+async def get_config():
+    """Get client configuration"""
+    return {
+        "user_id": USER_ID,
+        "app_name": APP_NAME
+    }
 
 
 @app.post("/upload")
