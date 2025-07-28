@@ -86,7 +86,7 @@ ultimate-ai-assistant/
 │       ├── sub_agents/          # Specialized external service agents
 │       └── utils/               # Core utilities and memory service
 ├── documentation/               # Comprehensive documentation
-├── environments/               # User-specific environment files
+├── user_data/                  # User-specific environment files
 ├── static/                     # Frontend interface
 └── manage_users.py            # User environment management CLI
 ```
@@ -100,7 +100,7 @@ Main `.env` file contains shared API keys:
 - `GOOGLE_API_KEY`: Google AI API key
 - `ZEP_API_KEY`: Zep memory service API key
 
-User-specific configurations in `environments/.env.{username}`:
+User-specific configurations in `user_data/.env.{username}`:
 
 - `GOOGLE_OAUTH_CREDENTIALS`: Google Calendar OAuth
 - `TODOIST_API_TOKEN`: Todoist API token

@@ -23,7 +23,7 @@ While core services (Google AI API, Zep Memory) use the main `.env` file, user-s
 3. **Copy and configure your environment file**:
 
    ```bash
-   cp environments/.env.nihaal.template environments/.env.nihaal
+   cp user_data/.env.nihaal.template user_data/.env.nihaal
    # Edit .env.nihaal with your actual API keys
    ```
 
@@ -37,7 +37,7 @@ Contains shared API keys:
 - `ZEP_API_KEY`: Zep memory service API key
 - `ZEP_API_URL`: Zep service URL
 
-### User-Specific Environment (`environments/.env.{username}`)
+### User-Specific Environment (`user_data/.env.{username}`)
 
 Contains user-specific API tokens:
 
@@ -94,7 +94,7 @@ python manage_users.py switch --user USERNAME
 ```
 ultimate-ai-assistant/
 ├── .env                          # Main environment (shared keys)
-├── environments/
+├── user_data/
 │   ├── .env.template            # Base template
 │   ├── .env.nihaal             # User's actual environment
 │   └── .env.john               # Another user's environment

@@ -22,9 +22,9 @@ class UserEnvironmentManager:
     def __init__(self, user_id: Optional[str] = None):
         self.user_id = user_id or USER_ID
         self.base_dir = Path(__file__).parent.parent  # ultimate-ai-assistant directory
-        self.env_dir = self.base_dir / "environments"
+        self.env_dir = self.base_dir / "user_data"
         
-        # Ensure environments directory exists
+        # Ensure user_data directory exists
         self.env_dir.mkdir(exist_ok=True)
         
         # Define file paths

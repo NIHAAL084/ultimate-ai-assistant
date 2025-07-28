@@ -62,12 +62,12 @@ def setup_user_environment(user_id: Optional[str] = None):
 
 def list_users():
     """List all users with environment files"""
-    env_dir = Path(__file__).parent / "environments"
+    env_dir = Path(__file__).parent / "user_data"
     
     print("👥 Users with environment configurations:")
     
     if not env_dir.exists():
-        print("   No environment directory found.")
+        print("   No user_data directory found.")
         return
     
     env_files = list(env_dir.glob(".env.*"))
