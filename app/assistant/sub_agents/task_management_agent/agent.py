@@ -1,6 +1,6 @@
 from datetime import datetime
 from google.adk.agents.llm_agent import Agent
-from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioServerParameters
+from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioConnectionParams, StdioServerParameters
 
 from .prompt import TASK_MANAGEMENT_PROMPT
 
@@ -40,10 +40,13 @@ Important: Always use the current date and time information provided above for c
         instruction=dynamic_prompt,
         tools=[
             MCPToolset(
-                connection_params=StdioServerParameters(
-                    command="npx",
-                    args=["-y", "@abhiz123/todoist-mcp-server"],
-                    env=TODOIST_ENV,
+                connection_params=StdioConnectionParams(
+                    server_params=StdioServerParameters(
+                        command="npx",
+                        args=["-y", "@abhiz123/todoist-mcp-server"],
+                        env=TODOIST_ENV,
+                    ),
+                    timeout=60.0,
                 )
             ),
         ],
