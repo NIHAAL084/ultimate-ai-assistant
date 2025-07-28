@@ -1,9 +1,6 @@
 #!/usr/bin/env python3
 """
-User Environment Managemen        print(f"🔑 After copying, edit {user_env_file} and add your API keys:")
-        print("   - GOOGLE_OAUTH_CREDENTIALS (path to your Google OAuth JSON file)")
-        print("   - TODOIST_API_TOKEN (your Todoist API token)")
-        print("   Note: GOOGLE_API_KEY and ZEP_API_KEY are already in the main .env file")ipt for Ultimate AI Assistant
+User Environment Management Script for Ultimate AI Assistant
 
 This script helps manage user-specific environment configurations.
 It allows users to set up their API keys and tokens for their specific user profile.
@@ -19,11 +16,15 @@ app_dir = Path(__file__).parent / "app"
 sys.path.append(str(app_dir))
 
 from app.user_env import UserEnvironmentManager
-from app.config import USER_ID
+from app.config import APP_NAME
 
-def setup_user_environment(user_id: Optional[str] = None):
-    """Set up environment for a specific user"""
-    user_id = user_id or USER_ID
+def setup_user_environment(user_id: str):
+    """Setup environment files for a specific user"""
+    if not user_id:
+        raise ValueError("user_id is required")
+    
+    # Normalize user_id to lowercase
+    user_id = user_id.lower().strip()
     env_manager = UserEnvironmentManager(user_id)
     
     print(f"🔧 Setting up environment for user: {user_id}")
@@ -89,9 +90,13 @@ def list_users():
     if not env_files:
         print("   No environment files found.")
 
-def validate_user_environment(user_id: Optional[str] = None):
+def validate_user_environment(user_id: str):
     """Validate a user's environment configuration"""
-    user_id = user_id or USER_ID
+    if not user_id:
+        raise ValueError("user_id is required")
+    
+    # Normalize user_id to lowercase
+    user_id = user_id.lower().strip()
     env_manager = UserEnvironmentManager(user_id)
     
     print(f"🔍 Validating environment for user: {user_id}")

@@ -1,6 +1,7 @@
 import asyncio
 import base64
 import json
+import logging
 import os
 import warnings
 import uuid
@@ -10,11 +11,19 @@ from typing import AsyncIterable
 
 from dotenv import load_dotenv
 
+# Suppress various warnings
 warnings.filterwarnings("ignore", category=UserWarning, module="pydantic")
+warnings.filterwarnings("ignore", message=".*BaseAuthenticatedTool.*experimental.*")
+warnings.filterwarnings("ignore", message=".*auth_config.*auth_scheme.*missing.*")
 
-from fastapi import FastAPI, Query, WebSocket, UploadFile, File, HTTPException
+# Configure logging to reduce MCP tool verbosity
+logging.getLogger("google.adk.tools.mcp_tool").setLevel(logging.ERROR)
+logging.getLogger("google.adk").setLevel(logging.WARNING)
+
+from fastapi import FastAPI, Query, WebSocket, UploadFile, File, HTTPException, Request
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from google.adk.agents import LiveRequestQueue
 from google.adk.agents.run_config import RunConfig
 from google.adk.events.event import Event
@@ -22,10 +31,15 @@ from google.adk.runners import Runner
 from google.adk.sessions.in_memory_session_service import InMemorySessionService
 from google.adk.artifacts import InMemoryArtifactService
 from google.genai import types
-from .assistant.agent import root_agent
+from .assistant.agent import create_agent
 from .assistant.utils.zep_memory_service import ZepMemoryService
 from .assistant.utils.session_memory_manager import SessionMemoryManager
-from .config import APP_NAME, USER_ID, DEFAULT_VOICE
+from .config import APP_NAME, DEFAULT_VOICE
+from .user_env import UserEnvironmentManager
+
+# Pydantic models
+class UserValidationRequest(BaseModel):
+    user_id: str
 
 #
 # ADK Streaming
@@ -57,20 +71,30 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 function_call_completed = asyncio.Event()
 
 
-async def start_agent_session(session_id, is_audio=False):
+async def start_agent_session(session_id, user_id=None, is_audio=False):
     """Starts an agent session"""
+
+    # Require user_id for authentication
+    if not user_id:
+        raise ValueError("user_id is required for authentication")
+    
+    # Normalize user_id to lowercase for consistency
+    effective_user_id = user_id.lower().strip()
+
+    # Create user-specific agent
+    user_agent = create_agent(user_id=effective_user_id)
 
     # Create a Session
     session = await session_service.create_session(
         app_name=APP_NAME,
-        user_id=USER_ID,
+        user_id=effective_user_id,
         session_id=session_id,
     )
 
     # Create a Runner
     runner = Runner(
         app_name=APP_NAME,
-        agent=root_agent,
+        agent=user_agent,
         session_service=session_service,
         artifact_service=artifact_service,
         memory_service=memory_service,  # Add Zep memory service
@@ -227,9 +251,40 @@ async def root():
 async def get_config():
     """Get client configuration"""
     return {
-        "user_id": USER_ID,
         "app_name": APP_NAME
     }
+
+
+@app.post("/validate-user")
+async def validate_user(request: UserValidationRequest):
+    """Validate if a user ID has a corresponding environment file"""
+    try:
+        user_id = request.user_id.strip().lower()
+        
+        # Try to create a UserEnvironmentManager instance for this user
+        try:
+            user_env = UserEnvironmentManager(user_id)
+            # Check if the user-specific environment file exists
+            if user_env.user_env_file.exists():
+                return {
+                    "valid": True,
+                    "message": f"User {user_id} validated successfully"
+                }
+            else:
+                return {
+                    "valid": False,
+                    "message": "Unregistered user. Please contact administrator."
+                }
+        except Exception as e:
+            print(f"Error validating user {user_id}: {e}")
+            return {
+                "valid": False,
+                "message": "Error validating user. Please try again."
+            }
+            
+    except Exception as e:
+        print(f"User validation error: {e}")
+        raise HTTPException(status_code=400, detail="Invalid request")
 
 
 @app.post("/upload")
@@ -260,16 +315,17 @@ async def websocket_endpoint(
     websocket: WebSocket,
     session_id: str,
     is_audio: str = Query(...),
+    user_id: str = Query(None),
 ):
     """Client websocket endpoint"""
 
     # Wait for client connection
     await websocket.accept()
-    print(f"Client #{session_id} connected, audio mode: {is_audio}")
+    print(f"Client #{session_id} connected, audio mode: {is_audio}, user: {user_id or 'default'}")
 
-    # Start agent session
+    # Start agent session with user_id
     live_events, live_request_queue, session = await start_agent_session(
-        session_id, is_audio == "true"
+        session_id, user_id, is_audio == "true"
     )
 
     # Start tasks

@@ -110,9 +110,10 @@ ENV/
 env.bak/
 venv.bak/
 
-# User-specific environment files (but allow templates)
+# User-specific files (but allow templates)
 user_data/.env.*
 !user_data/.env.template
+user_data/credentials/*
 
 # Spyder project settings
 .spyderproject

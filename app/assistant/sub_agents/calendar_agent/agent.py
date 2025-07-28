@@ -1,6 +1,16 @@
 from datetime import datetime
+import warnings
+import logging
 from google.adk.agents.llm_agent import Agent
 from google.adk.tools.mcp_tool.mcp_toolset import MCPToolset, StdioConnectionParams, StdioServerParameters
+from typing import Optional, Dict
+
+# Suppress specific warnings from ADK
+warnings.filterwarnings("ignore", message=".*BaseAuthenticatedTool.*experimental.*")
+warnings.filterwarnings("ignore", message=".*auth_config.*auth_scheme.*missing.*")
+
+# Reduce logging verbosity for MCP tools
+logging.getLogger("google.adk.tools.mcp_tool").setLevel(logging.ERROR)
 
 from .prompt import CALENDAR_PROMPT
 
@@ -8,29 +18,59 @@ from .prompt import CALENDAR_PROMPT
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
-from app.user_env import get_user_env_var
+from app.user_env import UserEnvironmentManager
 
-# ---- Google Calendar MCP Server ----
-# Using official Google Calendar MCP server by nspady
-# https://github.com/nspady/google-calendar-mcp
 
-GOOGLE_OAUTH_CREDENTIALS = get_user_env_var("GOOGLE_OAUTH_CREDENTIALS")
-if GOOGLE_OAUTH_CREDENTIALS is None:
-    print("⚠️ GOOGLE_OAUTH_CREDENTIALS not set - Calendar agent will have limited functionality")
+def get_calendar_env_for_user(user_id: Optional[str] = None) -> Dict[str, str]:
+    """Get calendar environment variables for a specific user."""
+    if user_id:
+        try:
+            # Normalize user_id to lowercase
+            normalized_user_id = user_id.lower().strip()
+            user_env = UserEnvironmentManager(normalized_user_id)
+            google_oauth_credentials = user_env.get_env_var("GOOGLE_OAUTH_CREDENTIALS")
+            google_calendar_mcp_token_path = user_env.get_env_var("GOOGLE_CALENDAR_MCP_TOKEN_PATH")
+            
+            # Resolve relative paths to absolute paths
+            if google_oauth_credentials and not os.path.isabs(google_oauth_credentials):
+                # Get the project root directory (ultimate-ai-assistant)
+                project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+                google_oauth_credentials = os.path.join(project_root, google_oauth_credentials)
+            
+            if google_calendar_mcp_token_path and not os.path.isabs(google_calendar_mcp_token_path):
+                # Get the project root directory (ultimate-ai-assistant)
+                project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+                google_calendar_mcp_token_path = os.path.join(project_root, google_calendar_mcp_token_path)
+                
+        except Exception:
+            # Fall back to None if user-specific environment is not available
+            google_oauth_credentials = None
+            google_calendar_mcp_token_path = None
+    else:
+        # No user_id provided, use None
+        google_oauth_credentials = None
+        google_calendar_mcp_token_path = None
+    
+    if google_oauth_credentials is None:
+        print(f"⚠️ GOOGLE_OAUTH_CREDENTIALS not set for user {user_id or 'default'} - Calendar agent will have limited functionality")
+    
+    # Environment variables for Google Calendar MCP server
+    calendar_env: Dict[str, str] = {}
+    if google_oauth_credentials:
+        calendar_env["GOOGLE_OAUTH_CREDENTIALS"] = google_oauth_credentials
+    
+    if google_calendar_mcp_token_path:
+        calendar_env["GOOGLE_CALENDAR_MCP_TOKEN_PATH"] = google_calendar_mcp_token_path
+    
+    return calendar_env
 
-# Environment variables for Google Calendar MCP server
-GOOGLE_CALENDAR_ENV = {}
-if GOOGLE_OAUTH_CREDENTIALS:
-    GOOGLE_CALENDAR_ENV["GOOGLE_OAUTH_CREDENTIALS"] = GOOGLE_OAUTH_CREDENTIALS
 
-# Optional: Custom token storage location
-GOOGLE_CALENDAR_MCP_TOKEN_PATH = get_user_env_var("GOOGLE_CALENDAR_MCP_TOKEN_PATH")
-if GOOGLE_CALENDAR_MCP_TOKEN_PATH:
-    GOOGLE_CALENDAR_ENV["GOOGLE_CALENDAR_MCP_TOKEN_PATH"] = GOOGLE_CALENDAR_MCP_TOKEN_PATH
-
-def create_calendar_agent():
-    """Create calendar agent with dynamic current time context."""
+def create_calendar_agent(user_id: Optional[str] = None) -> Agent:
+    """Create calendar agent with dynamic current time context and user-specific environment."""
     current_time = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p")
+    
+    # Get user-specific calendar environment
+    calendar_env = get_calendar_env_for_user(user_id)
     
     # Combine base prompt with current time context
     dynamic_prompt = f"""Current Date and Time: {current_time}
@@ -47,9 +87,9 @@ Important: Always use the current date and time information provided above for c
             MCPToolset(
                 connection_params=StdioConnectionParams(
                     server_params=StdioServerParameters(
-                        command="npx",
-                        args=["@cocal/google-calendar-mcp"],
-                        env=GOOGLE_CALENDAR_ENV,
+                        command="uv",
+                        args=["run", "npx", "@cocal/google-calendar-mcp"],
+                        env=calendar_env,
                     ),
                     timeout=60.0,
                 )
@@ -57,5 +97,5 @@ Important: Always use the current date and time information provided above for c
         ],
     )
 
-# Create the agent instance
-calendar_agent = create_calendar_agent()
+# Agent creation function available for dynamic instantiation
+ 

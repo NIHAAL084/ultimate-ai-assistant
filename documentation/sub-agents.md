@@ -23,7 +23,7 @@ This guide covers the specialized AI agents that integrate with external service
 ### Task Management Agent
 
 **Purpose**: Todoist task and project management  
-**MCP Server**: `@abhiz123/todoist-mcp-server`
+**MCP Server**: `@nihaal084/todoist-mcp-server` (Gemini-compatible version)
 
 **Key Capabilities**:
 

@@ -12,15 +12,19 @@ from typing import Dict, Optional, Union, List
 import logging
 from dotenv import load_dotenv
 
-from .config import USER_ID
+from .config import APP_NAME
 
 logger = logging.getLogger(__name__)
 
 class UserEnvironmentManager:
     """Manages user-specific environment variables and API tokens"""
     
-    def __init__(self, user_id: Optional[str] = None):
-        self.user_id = user_id or USER_ID
+    def __init__(self, user_id: str):
+        """Initialize UserEnvironmentManager for a specific user"""
+        if not user_id:
+            raise ValueError("user_id is required")
+        # Normalize user_id to lowercase for consistency
+        self.user_id = user_id.lower().strip()
         self.base_dir = Path(__file__).parent.parent  # ultimate-ai-assistant directory
         self.env_dir = self.base_dir / "user_data"
         
@@ -65,8 +69,11 @@ class UserEnvironmentManager:
 # GOOGLE_API_KEY and ZEP_API_KEY are already in the main .env file
 
 # Google Calendar MCP Server
-GOOGLE_OAUTH_CREDENTIALS=/path/to/your/gcp-oauth.keys.json
-GOOGLE_CALENDAR_MCP_TOKEN_PATH=/custom/token/path
+# Path to your Google OAuth credentials JSON file
+# You can place it in user_data/credentials/ folder for organization
+GOOGLE_OAUTH_CREDENTIALS=user_data/credentials/credentials_yourusername.json
+# Optional: Custom token storage location (if not specified, uses default)
+GOOGLE_CALENDAR_MCP_TOKEN_PATH=user_data/credentials/tokens
 
 # Todoist Task Management Agent  
 TODOIST_API_TOKEN=your-todoist-api-token-here
@@ -150,17 +157,23 @@ TODOIST_API_TOKEN=your-todoist-api-token-here
         logger.info(f"Updated {key} in user environment file")
 
 
-# Global instance for easy access
-user_env_manager = UserEnvironmentManager()
-
-def get_user_env_var(key: str, default: Optional[str] = None) -> Optional[str]:
+def get_user_env_var(key: str, default: Optional[str] = None, user_id: Optional[str] = None) -> Optional[str]:
     """Convenience function to get user-specific environment variable"""
+    if not user_id:
+        raise ValueError("user_id is required for user-specific environment variables")
+    user_env_manager = UserEnvironmentManager(user_id)
     return user_env_manager.get_env_var(key, default)
 
-def set_user_env_var(key: str, value: str, persist: bool = False):
+def set_user_env_var(key: str, value: str, user_id: Optional[str] = None, persist: bool = False):
     """Convenience function to set user-specific environment variable"""
+    if not user_id:
+        raise ValueError("user_id is required for user-specific environment variables")
+    user_env_manager = UserEnvironmentManager(user_id)
     return user_env_manager.set_env_var(key, value, persist)
 
-def get_user_info() -> Dict[str, Union[str, bool]]:
+def get_user_info(user_id: str) -> Dict[str, Union[str, bool]]:
     """Convenience function to get user environment information"""
+    if not user_id:
+        raise ValueError("user_id is required")
+    user_env_manager = UserEnvironmentManager(user_id)
     return user_env_manager.get_user_info()

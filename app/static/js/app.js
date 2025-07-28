@@ -12,6 +12,7 @@ let ws_url = null;
 let websocket = null;
 let is_audio = false;
 let currentMessageId = null; // Track the current message ID during a conversation turn
+let currentUserId = null; // Current user ID
 
 // Generate random session ID for each conversation
 // Now that we have ZepMemoryService, we don't need deterministic session IDs
@@ -19,19 +20,22 @@ function generateRandomSessionId() {
   return 'session_' + Math.random().toString(36).substr(2, 16) + '_' + Date.now().toString(36);
 }
 
-// Initialize session ID
-async function initializeSession() {
+// Initialize session ID with user ID
+async function initializeSession(userId = null) {
   try {
     // Generate a new random session ID for each conversation
     sessionId = generateRandomSessionId();
-    ws_url = "ws://" + window.location.host + "/ws/" + sessionId;
-    console.log(`New session ID generated: ${sessionId}`);
+    // Include user_id in the WebSocket URL if provided
+    const userParam = userId ? `&user_id=${encodeURIComponent(userId)}` : '';
+    ws_url = "ws://" + window.location.host + "/ws/" + sessionId + "?is_audio=false" + userParam;
+    console.log(`New session ID generated: ${sessionId}${userId ? ` for user: ${userId}` : ''}`);
     return true;
   } catch (error) {
     console.error('Failed to initialize session:', error);
     // Fallback to simpler random session ID
     sessionId = 'fallback_' + Math.random().toString().substring(2);
-    ws_url = "ws://" + window.location.host + "/ws/" + sessionId;
+    const userParam = userId ? `&user_id=${encodeURIComponent(userId)}` : '';
+    ws_url = "ws://" + window.location.host + "/ws/" + sessionId + "?is_audio=false" + userParam;
     return false;
   }
 }
@@ -163,9 +167,8 @@ async function uploadFiles() {
 
 // WebSocket handlers
 function connectWebsocket() {
-  // Connect websocket
-  const wsUrl = ws_url + "?is_audio=" + is_audio;
-  websocket = new WebSocket(wsUrl);
+  // Connect websocket - ws_url already contains all necessary parameters
+  websocket = new WebSocket(ws_url);
 
   // Handle connection open
   websocket.onopen = function () {
@@ -303,13 +306,17 @@ function connectWebsocket() {
 }
 
 // Initialize the application
-async function initializeApp() {
-  await initializeSession();
+async function initializeApp(userId = null) {
+  currentUserId = userId;
+  await initializeSession(userId);
   connectWebsocket();
 }
 
-// Start the application
-initializeApp();
+// Make initializeApp available globally for the landing page
+window.initializeApp = initializeApp;
+
+// Don't auto-start the application anymore - wait for user ID input
+// The landing page will call initializeApp when ready
 
 // Add submit handler to the form
 function addSubmitHandler() {

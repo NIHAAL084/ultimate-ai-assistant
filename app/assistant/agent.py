@@ -3,12 +3,15 @@ from google.adk.tools import google_search, load_memory
 from google.adk.tools.agent_tool import AgentTool
 from .tools import process_document_tool, register_uploaded_files_tool, list_available_user_files_tool
 from .prompt import PRIMARY_ASSISTANT_PROMPT
-from .sub_agents import calendar_agent, task_management_agent
+from .sub_agents import create_calendar_agent, create_task_management_agent
 from datetime import datetime
 
 
-def create_agent() -> Agent:
-    """Create agent with dynamic datetime in the instruction"""
+from typing import Optional
+
+
+def create_agent(user_id: Optional[str] = None) -> Agent:
+    """Create agent with dynamic datetime in the instruction and user-specific sub-agents"""
     current_time = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p")
     
     # Combine base prompt with current time context
@@ -18,8 +21,11 @@ def create_agent() -> Agent:
 
 Important: Always use the current date and time information provided above for context when handling time-sensitive requests, scheduling, or understanding relative time references."""
     
-    # Create AgentTools for sub-agents
+    # Create AgentTools for sub-agents with user-specific configuration
+    calendar_agent = create_calendar_agent(user_id=user_id)
     calendar_tool = AgentTool(agent=calendar_agent)
+    
+    task_management_agent = create_task_management_agent(user_id=user_id)  
     task_management_tool = AgentTool(agent=task_management_agent)
     
     return Agent(
@@ -37,7 +43,3 @@ Important: Always use the current date and time information provided above for c
             task_management_tool
         ],
     )
-
-
-# Create the agent instance
-root_agent = create_agent()
