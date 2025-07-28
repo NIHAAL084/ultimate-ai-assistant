@@ -1,6 +1,9 @@
 from google.adk.agents import Agent
 from google.adk.tools import google_search, load_memory
+from google.adk.tools.agent_tool import AgentTool
 from .tools import process_document_tool, register_uploaded_files_tool, list_available_user_files_tool
+from .prompt import PRIMARY_ASSISTANT_PROMPT
+from .sub_agents import calendar_agent, task_management_agent
 from datetime import datetime
 
 
@@ -8,51 +11,30 @@ def create_agent() -> Agent:
     """Create agent with dynamic datetime in the instruction"""
     current_time = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p")
     
+    # Combine base prompt with current time context
+    dynamic_prompt = f"""Current Date and Time: {current_time}
+
+{PRIMARY_ASSISTANT_PROMPT}
+
+Important: Always use the current date and time information provided above for context when handling time-sensitive requests, scheduling, or understanding relative time references."""
+    
+    # Create AgentTools for sub-agents
+    calendar_tool = AgentTool(agent=calendar_agent)
+    task_management_tool = AgentTool(agent=task_management_agent)
+    
     return Agent(
         name="assistant",
         model="gemini-2.0-flash-exp",
         description="Agent to help with online search, document processing, image analysis, and remembering past conversations.",
-        instruction=f"""
-        You are an AI assistant that can perform web searches, process uploaded documents, analyze images using your built-in vision capabilities, and remember information from past conversations.
-        
-        MEMORY AND RECALL INSTRUCTIONS:
-        - If the user asks about something they previously told you, or about their past preferences or statements (e.g., "What did I say about...?", "Do I like...?", "What was my favorite...?"), you MUST use the `load_memory` tool to find this information.
-        - If you use `load_memory` and find relevant information, incorporate it naturally into your response.
-        - If `load_memory` returns no relevant information, clearly state that you don't have the specific information or can't recall.
-        
-        IMPORTANT FILE HANDLING PROTOCOL:
-        1. ALWAYS run register_uploaded_files_tool at the start of every conversation and whenever users mention files or images
-        2. ALWAYS run register_uploaded_files_tool before running list_available_user_files_tool to ensure the artifact list is up to date
-        3. DO NOT tell the user that files have been registered - just do it silently
-        4. When users ask about their files or mention working with files, use list_available_user_files_tool to show what's available
-        
-        Available tools:
-        - google_search: Search the web for information
-        - load_memory: Search past conversations for relevant information (use when user asks about previous interactions)
-        - process_document_tool: Extract text and tables from PDF, DOCX, and TXT documents
-        - register_uploaded_files_tool: Silently register uploaded files as artifacts (run before file operations!)
-        - list_available_user_files_tool: Show user what files/artifacts are available (run register_uploaded_files_tool first!)
-        
-        Image Analysis Capabilities:
-        For image files (JPG, JPEG, PNG, GIF, WebP, BMP), you can directly view and analyze their contents using your native vision capabilities. When a user uploads an image:
-        1. First run register_uploaded_files_tool to register the image as an artifact (don't mention this to user)
-        2. Then you can directly view the image and provide detailed descriptions, analysis, or answer questions about what you see
-        3. You can identify objects, people, text, scenes, colors, composition, and other visual elements
-        4. You can read text within images (OCR capability)
-        5. You can analyze charts, graphs, diagrams, and other visual data
-        
-        No separate image processing tool is needed - you have built-in vision capabilities that work directly with uploaded images.
-        
-        Always use the appropriate tools for document processing, but for images, rely on your native vision abilities after registering the files.
-        
-        Current date and time: {current_time}
-        """,
+        instruction=dynamic_prompt,
         tools=[
             google_search,
             load_memory,
             process_document_tool,
             register_uploaded_files_tool,
-            list_available_user_files_tool
+            list_available_user_files_tool,
+            calendar_tool,
+            task_management_tool
         ],
     )
 

@@ -110,6 +110,10 @@ ENV/
 env.bak/
 venv.bak/
 
+# User-specific environment files (but allow templates)
+environments/.env.*
+!environments/.env.template
+
 # Spyder project settings
 .spyderproject
 .spyproject

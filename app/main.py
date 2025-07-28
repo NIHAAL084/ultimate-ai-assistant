@@ -31,7 +31,7 @@ from .config import APP_NAME, USER_ID, DEFAULT_VOICE
 # ADK Streaming
 #
 
-# Load Gemini API Key
+# Load environment variables from .env file
 load_dotenv()
 
 # Session and artifact services
