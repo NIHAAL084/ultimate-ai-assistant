@@ -204,12 +204,30 @@ async def client_to_agent_messaging(
     websocket: WebSocket, live_request_queue: LiveRequestQueue, session
 ):
     """Client to agent communication"""
+    # Keep track of current mode
+    is_audio_mode = False
+    
     while True:
         message_json = await websocket.receive_text()
         message = json.loads(message_json)
         mime_type = message["mime_type"]
         data = message.get("data", "")
         role = message.get("role", "user")
+
+        # Handle mode change messages
+        if mime_type == "application/mode-change":
+            new_mode = message.get("mode", "text")
+            is_audio_mode = (new_mode == "audio")
+            
+            # Acknowledge the mode change
+            response = {
+                "mime_type": "application/mode-change-ack",
+                "mode": new_mode,
+                "success": True
+            }
+            await websocket.send_text(json.dumps(response))
+            print(f"[MODE CHANGE] Changed to {new_mode} mode")
+            continue
 
         if mime_type == "text/plain":
             # Send just the user text - agent will automatically check for uploaded files

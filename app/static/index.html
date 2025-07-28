@@ -22,7 +22,6 @@
       --border-color: #333333;
       --chat-background: #0A0A0A;
       --glow-color: rgba(255, 255, 255, 0.8);
-      --bubble-color: rgba(255, 255, 255, 0.1);
     }
 
     * {
@@ -633,6 +632,8 @@
       align-self: flex-start;
       opacity: 0;
       transition: opacity 0.3s ease;
+      order: 9999;
+      /* This ensures it always appears at the bottom */
     }
 
     .typing-indicator.visible {
@@ -724,120 +725,6 @@
 
       #sendButton {
         flex: 1;
-      }
-    }
-
-    /* Landing Page Styles */
-    .landing-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      width: 100vw;
-      position: relative;
-      z-index: 2;
-    }
-
-    .zora-bubble {
-      width: 400px;
-      height: 400px;
-      border-radius: 50%;
-      background: var(--bubble-color);
-      backdrop-filter: blur(20px);
-      border: 2px solid rgba(255, 255, 255, 0.3);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      position: relative;
-      overflow: hidden;
-
-      /* Glowing effect */
-      box-shadow:
-        0 0 50px rgba(255, 255, 255, 0.2),
-        0 0 100px rgba(255, 255, 255, 0.1),
-        inset 0 0 50px rgba(255, 255, 255, 0.05);
-
-      /* Pulsing animation */
-      animation: pulse 3s ease-in-out infinite;
-    }
-
-    .zora-bubble:hover {
-      /* Removed transform and kept only subtle glow effects */
-      box-shadow:
-        0 0 60px rgba(255, 255, 255, 0.3),
-        0 0 120px rgba(255, 255, 255, 0.15),
-        inset 0 0 60px rgba(255, 255, 255, 0.08);
-    }
-
-    .zora-bubble::before {
-      content: '';
-      position: absolute;
-      top: -2px;
-      left: -2px;
-      right: -2px;
-      bottom: -2px;
-      border-radius: 50%;
-      background: linear-gradient(45deg,
-          rgba(255, 255, 255, 0.4),
-          rgba(255, 255, 255, 0.1),
-          rgba(255, 255, 255, 0.4));
-      z-index: -1;
-      animation: rotate 6s linear infinite;
-    }
-
-    .zora-text {
-      font-size: 64px;
-      font-weight: 700;
-      color: #000000;
-      /* Black text */
-      letter-spacing: 8px;
-      text-shadow: none;
-      /* Remove glow effects */
-      animation: none;
-      /* Remove glow animation */
-      pointer-events: none;
-      /* Prevent mouse interactions */
-      user-select: none;
-      /* Prevent text selection */
-    }
-
-    @keyframes pulse {
-
-      0%,
-      100% {
-        transform: scale(1);
-        border-color: rgba(255, 255, 255, 0.3);
-      }
-
-      50% {
-        transform: scale(1.02);
-        border-color: rgba(255, 255, 255, 0.5);
-      }
-    }
-
-    @keyframes rotate {
-      0% {
-        transform: rotate(0deg);
-      }
-
-      100% {
-        transform: rotate(360deg);
-      }
-    }
-
-    @keyframes glow {
-      0% {
-        text-shadow:
-          0 0 20px rgba(255, 255, 255, 0.5),
-          0 0 40px rgba(255, 255, 255, 0.2);
-      }
-
-      100% {
-        text-shadow:
-          0 0 30px rgba(255, 255, 255, 0.8),
-          0 0 60px rgba(255, 255, 255, 0.4);
       }
     }
 
@@ -1333,25 +1220,6 @@
 
     /* Mobile responsive adjustments */
     @media (max-width: 600px) {
-      .zora-bubble {
-        width: 300px;
-        height: 300px;
-      }
-
-      .zora-text {
-        font-size: 48px;
-        letter-spacing: 6px;
-        color: #000000;
-        /* Ensure black text in responsive mode */
-        text-shadow: none;
-        /* No glow effects */
-        animation: none;
-        /* No animations */
-        pointer-events: none;
-        /* Prevent mouse interactions */
-        user-select: none;
-        /* Prevent text selection */
-      }
 
       .user-prompt-box {
         width: 90%;
@@ -1364,13 +1232,6 @@
 
 <body>
   <div id="dither-background"></div>
-
-  <!-- Landing Page -->
-  <div id="landing-container" class="landing-container">
-    <div class="zora-bubble" id="zora-bubble">
-      <div class="zora-text">ZORA</div>
-    </div>
-  </div>
 
   <!-- User ID Prompt -->
   <div id="user-prompt-container" class="user-prompt-container">
@@ -1513,27 +1374,17 @@
     // Global user ID variable
     let currentUserId = null;
 
-    // Landing page and user authentication flow
+    // User authentication flow
     document.addEventListener('DOMContentLoaded', function () {
-      const landingContainer = document.getElementById('landing-container');
       const userPromptContainer = document.getElementById('user-prompt-container');
       const mainContainer = document.getElementById('main-container');
-      const zoraBubble = document.getElementById('zora-bubble');
       const userIdForm = document.getElementById('userIdForm');
       const userIdInput = document.getElementById('userId');
       const errorMessage = document.getElementById('error-message');
 
-      // Skip landing page and go directly to user prompt
-      landingContainer.style.display = 'none';
+      // Show user prompt directly
       userPromptContainer.style.display = 'flex';
       userIdInput.focus();
-
-      // Bubble click handler (kept for compatibility)
-      zoraBubble.addEventListener('click', function () {
-        landingContainer.style.display = 'none';
-        userPromptContainer.style.display = 'flex';
-        userIdInput.focus();
-      });
 
       // User ID form submission
       userIdForm.addEventListener('submit', async function (e) {
@@ -1878,12 +1729,12 @@
           waveColor: [0.0, 0.0, 0.0],
           disableAnimation: false,
           enableMouseInteraction: true,
-          mouseRadius: 0.3, // Reduced to stay away from bubble
-          colorNum: 8,
+          mouseRadius: 0.1, // Reduced to stay away from bubble
+          colorNum: 10,
           waveAmplitude: 0.15, // Reduced amplitude
-          waveFrequency: 2.0,
-          waveSpeed: 0.02,
-          pixelSize: 4
+          waveFrequency: 10.0,
+          waveSpeed: 0.05,
+          pixelSize: 1
         });
 
         window.ditherBackground = ditherBg;

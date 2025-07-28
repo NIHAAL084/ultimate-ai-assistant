@@ -318,6 +318,33 @@ window.initializeApp = initializeApp;
 // Don't auto-start the application anymore - wait for user ID input
 // The landing page will call initializeApp when ready
 
+// Change audio mode without reconnecting
+async function changeAudioMode(enableAudio) {
+  if (websocket && websocket.readyState === WebSocket.OPEN) {
+    const modeMessage = {
+      mime_type: "application/mode-change",
+      mode: enableAudio ? "audio" : "text"
+    };
+
+    // Send mode change request
+    sendMessage(modeMessage);
+
+    // Set the audio mode flag
+    is_audio = enableAudio;
+
+    // Add or remove audio styling class
+    if (enableAudio) {
+      messagesDiv.classList.add("audio-enabled");
+    } else {
+      messagesDiv.classList.remove("audio-enabled");
+    }
+
+    console.log(`Changed to ${enableAudio ? 'audio' : 'text'} mode`);
+    return true;
+  }
+  return false;
+}
+
 // Add submit handler to the form
 function addSubmitHandler() {
   messageForm.onsubmit = async function (e) {
@@ -465,12 +492,9 @@ startAudioButton.addEventListener("click", () => {
   stopAudioButton.style.display = "inline-block";
   recordingStatus.classList.add("active");
   startAudio();
-  is_audio = true;
 
-  // Add class to messages container to enable audio styling
-  messagesDiv.classList.add("audio-enabled");
-
-  connectWebsocket(); // reconnect with the audio mode
+  // Change to audio mode without reconnecting
+  changeAudioMode(true);
 });
 
 // Stop audio recording when stop button is clicked
@@ -483,17 +507,8 @@ stopAudioButton.addEventListener("click", () => {
   startAudioButton.classList.remove("recording");
   recordingStatus.classList.remove("active");
 
-  // Remove audio styling class
-  messagesDiv.classList.remove("audio-enabled");
-
-  // Reconnect without audio mode
-  is_audio = false;
-
-  // Only reconnect if the connection is still open
-  if (websocket && websocket.readyState === WebSocket.OPEN) {
-    websocket.close();
-    // The onclose handler will trigger reconnection
-  }
+  // Change to text mode without reconnecting
+  changeAudioMode(false);
 });
 
 // Audio recorder handler
