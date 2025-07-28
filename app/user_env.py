@@ -55,43 +55,71 @@ class UserEnvironmentManager:
             logger.info(f"Loaded user-specific environment for {self.user_id}")
         else:
             logger.warning(f"User-specific environment file not found: {self.user_env_file}")
-            self.create_user_env_template()
+            # Don't automatically create template for unregistered users
         
         if env_files_loaded:
             logger.info(f"Environment files loaded: {', '.join(env_files_loaded)}")
         else:
             logger.warning("No environment files found")
     
-    def create_user_env_template(self):
-        """Create a template environment file for the user"""
-        template_content = f"""# User-specific Environment Variables for: {self.user_id}
-# Copy this file to .env.{self.user_id.lower()} and fill in your API keys
+    def create_user_env_file(self, todoist_token: str, oauth_credentials_path: str):
+        """Create a user environment file with the provided credentials"""
+        env_content = f"""# User-specific Environment Variables for: {self.user_id.upper()}
 # GOOGLE_API_KEY and ZEP_API_KEY are already in the main .env file
 
 # Google Calendar MCP Server
-# Path to your Google OAuth credentials JSON file
-# You can place it in user_data/credentials/ folder for organization
-GOOGLE_OAUTH_CREDENTIALS=user_data/credentials/credentials_yourusername.json
-# Optional: Custom token storage location (if not specified, uses default)
-GOOGLE_CALENDAR_MCP_TOKEN_PATH=user_data/credentials/tokens
+GOOGLE_OAUTH_CREDENTIALS={oauth_credentials_path}
 
 # Todoist Task Management Agent  
-TODOIST_API_TOKEN=your-todoist-api-token-here
+TODOIST_API_TOKEN={todoist_token}
 
 # Other user-specific configurations
 # Add any additional environment variables below
 """
         
-        # Create user-specific template (only if it doesn't exist)
-        user_template = self.env_dir / f".env.{self.user_id.lower()}.template"
-        if not user_template.exists():
-            with open(user_template, 'w', encoding='utf-8') as f:
-                f.write(template_content)
-            
-            logger.info(f"Created environment template at: {user_template}")
-            print(f"🔧 Created environment template for user '{self.user_id}' at:")
-            print(f"   {user_template}")
-            print(f"📝 Please copy this file to '.env.{self.user_id.lower()}' and fill in your API keys")
+        with open(self.user_env_file, 'w', encoding='utf-8') as f:
+            f.write(env_content)
+        
+        logger.info(f"Created user environment file: {self.user_env_file}")
+        return self.user_env_file
+    
+    def update_user_env_file(self, todoist_token: Optional[str] = None, oauth_credentials_path: Optional[str] = None):
+        """Update existing user environment file with new values"""
+        if not self.user_env_file.exists():
+            raise FileNotFoundError(f"User environment file not found: {self.user_env_file}")
+        
+        # Read existing content
+        with open(self.user_env_file, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # Update lines
+        updated_lines = []
+        for line in lines:
+            if todoist_token and line.startswith('TODOIST_API_TOKEN='):
+                updated_lines.append(f'TODOIST_API_TOKEN={todoist_token}\n')
+            elif oauth_credentials_path and line.startswith('GOOGLE_OAUTH_CREDENTIALS='):
+                updated_lines.append(f'GOOGLE_OAUTH_CREDENTIALS={oauth_credentials_path}\n')
+            else:
+                updated_lines.append(line)
+        
+        # Write back to file
+        with open(self.user_env_file, 'w', encoding='utf-8') as f:
+            f.writelines(updated_lines)
+        
+        logger.info(f"Updated user environment file: {self.user_env_file}")
+        return self.user_env_file
+    
+    def user_exists(self) -> bool:
+        """Check if user environment file exists"""
+        return self.user_env_file.exists()
+    
+    @classmethod
+    def check_user_exists(cls, user_id: str) -> bool:
+        """Static method to check if a user exists without creating UserEnvironmentManager instance"""
+        base_dir = Path(__file__).parent.parent
+        env_dir = base_dir / "user_data"
+        user_env_file = env_dir / f".env.{user_id.lower().strip()}"
+        return user_env_file.exists()
     
     def get_env_var(self, key: str, default: Optional[str] = None) -> Optional[str]:
         """Get environment variable with user-specific priority"""
@@ -102,7 +130,7 @@ TODOIST_API_TOKEN=your-todoist-api-token-here
         os.environ[key] = value
         
         if persist:
-            self.update_user_env_file(key, value)
+            self.update_env_var(key, value)
     
     def list_user_env_vars(self) -> Dict[str, str]:
         """List all environment variables from user's env file"""
@@ -129,7 +157,7 @@ TODOIST_API_TOKEN=your-todoist-api-token-here
             "env_directory": str(self.env_dir)
         }
 
-    def update_user_env_file(self, key: str, value: str) -> None:
+    def update_env_var(self, key: str, value: str) -> None:
         """Update or add a key-value pair in the user's env file"""
         env_lines: List[str] = []
         key_found = False

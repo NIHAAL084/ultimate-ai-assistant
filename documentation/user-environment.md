@@ -43,7 +43,6 @@ Contains user-specific API tokens:
 
 - `GOOGLE_OAUTH_CREDENTIALS`: Path to Google OAuth JSON file
 - `TODOIST_API_TOKEN`: User's Todoist API token
-- `GOOGLE_CALENDAR_MCP_TOKEN_PATH`: Custom token storage path (optional)
 
 ## Management Commands
 

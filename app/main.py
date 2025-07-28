@@ -20,10 +20,11 @@ warnings.filterwarnings("ignore", message=".*auth_config.*auth_scheme.*missing.*
 logging.getLogger("google.adk.tools.mcp_tool").setLevel(logging.ERROR)
 logging.getLogger("google.adk").setLevel(logging.WARNING)
 
-from fastapi import FastAPI, Query, WebSocket, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, Query, WebSocket, UploadFile, File, HTTPException, Request, Form
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
+from typing import Optional
 from google.adk.agents import LiveRequestQueue
 from google.adk.agents.run_config import RunConfig
 from google.adk.events.event import Event
@@ -40,6 +41,16 @@ from .user_env import UserEnvironmentManager
 # Pydantic models
 class UserValidationRequest(BaseModel):
     user_id: str
+
+class UserRegistrationRequest(BaseModel):
+    user_id: str
+    todoist_api_token: str
+    oauth_credentials_filename: str  # filename of the uploaded credentials file
+
+class UserUpdateRequest(BaseModel):
+    user_id: str
+    todoist_api_token: Optional[str] = None
+    oauth_credentials_filename: Optional[str] = None
 
 #
 # ADK Streaming
@@ -285,6 +296,123 @@ async def validate_user(request: UserValidationRequest):
     except Exception as e:
         print(f"User validation error: {e}")
         raise HTTPException(status_code=400, detail="Invalid request")
+
+
+@app.post("/register-user")
+async def register_user(request: UserRegistrationRequest):
+    """Register a new user with their credentials"""
+    try:
+        user_id = request.user_id.lower().strip()
+        
+        # Check if user already exists
+        if UserEnvironmentManager.check_user_exists(user_id):
+            return {
+                "success": False,
+                "message": "User ID already in use"
+            }
+        
+        # Validate inputs
+        if not request.todoist_api_token or not request.oauth_credentials_filename:
+            return {
+                "success": False,
+                "message": "All fields are required for registration"
+            }
+        
+        # Create credentials path
+        credentials_path = f"user_data/credentials/{request.oauth_credentials_filename}"
+        
+        # Create user environment manager and environment file
+        user_env = UserEnvironmentManager(user_id)
+        user_env.create_user_env_file(request.todoist_api_token, credentials_path)
+        
+        return {
+            "success": True,
+            "message": f"User {user_id} registered successfully"
+        }
+        
+    except Exception as e:
+        print(f"Error registering user: {e}")
+        return {
+            "success": False,
+            "message": "Error registering user. Please try again."
+        }
+
+
+@app.post("/update-user")
+async def update_user(request: UserUpdateRequest):
+    """Update existing user credentials"""
+    try:
+        user_id = request.user_id.lower().strip()
+        
+        # Check if user exists
+        if not UserEnvironmentManager.check_user_exists(user_id):
+            return {
+                "success": False,
+                "message": "User not found"
+            }
+        
+        # Validate that at least one field is provided for update
+        if not request.todoist_api_token and not request.oauth_credentials_filename:
+            return {
+                "success": False,
+                "message": "At least one field must be provided for update"
+            }
+        
+        # Create credentials path if provided
+        credentials_path = None
+        if request.oauth_credentials_filename:
+            credentials_path = f"user_data/credentials/{request.oauth_credentials_filename}"
+        
+        # Update user environment
+        user_env = UserEnvironmentManager(user_id)
+        user_env.update_user_env_file(request.todoist_api_token, credentials_path)
+        
+        return {
+            "success": True,
+            "message": f"User {user_id} updated successfully"
+        }
+        
+    except Exception as e:
+        print(f"Error updating user: {e}")
+        return {
+            "success": False,
+            "message": "Error updating user. Please try again."
+        }
+
+
+@app.post("/upload-credentials")
+async def upload_credentials(file: UploadFile = File(...), user_id: str = Form(...)):
+    """Upload OAuth credentials file for user registration"""
+    try:
+        if not user_id:
+            raise HTTPException(status_code=400, detail="User ID is required")
+        
+        user_id = user_id.lower().strip()
+        
+        # Validate file type (should be JSON)
+        if not file.filename.endswith('.json'):
+            raise HTTPException(status_code=400, detail="Only JSON files are allowed")
+        
+        # Create filename with user ID
+        credentials_filename = f"credentials_{user_id}.json"
+        credentials_path = Path(__file__).parent.parent / "user_data" / "credentials" / credentials_filename
+        
+        # Ensure credentials directory exists
+        credentials_path.parent.mkdir(exist_ok=True)
+        
+        # Save file
+        with open(credentials_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+        
+        return {
+            "success": True,
+            "filename": credentials_filename,
+            "message": "Credentials file uploaded successfully"
+        }
+        
+    except Exception as e:
+        print(f"Error uploading credentials: {e}")
+        raise HTTPException(status_code=500, detail="Error uploading credentials file")
 
 
 @app.post("/upload")

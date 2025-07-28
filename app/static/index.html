@@ -937,7 +937,373 @@
       transform: translateY(0);
     }
 
+    .user-actions {
+      margin-top: 24px;
+      text-align: center;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .user-action-link {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      font-size: 14px;
+      cursor: pointer;
+      transition: color 0.3s ease;
+      text-decoration: none;
+      padding: 4px 8px;
+      white-space: nowrap;
+    }
+
+    .user-action-link:hover {
+      color: var(--primary-color);
+    }
+
+    .user-action-separator {
+      color: var(--text-secondary);
+      font-size: 14px;
+    }
+
     .error-message {
+      color: #ff6b6b;
+      font-size: 14px;
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(255, 107, 107, 0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 107, 107, 0.2);
+      display: none;
+    }
+
+    /* Registration Container Styles */
+    .registration-container {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+      z-index: 2;
+    }
+
+    .registration-box {
+      background: rgba(8, 8, 8, 0.7);
+      border-radius: 20px;
+      backdrop-filter: blur(40px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow:
+        0 16px 40px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      padding: 40px;
+      width: 450px;
+      text-align: left;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    .registration-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+      text-align: center;
+    }
+
+    .registration-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .registration-input-group {
+      margin-bottom: 24px;
+    }
+
+    .registration-label {
+      display: block;
+      font-size: 14px;
+      color: var(--text-color);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .registration-input {
+      width: 100%;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-color);
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .registration-input:focus {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+    }
+
+    .registration-input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .registration-file-input {
+      display: none;
+    }
+
+    .file-input-text {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      text-align: center;
+      word-break: break-all;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .file-input-text:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .registration-buttons {
+      display: flex;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .registration-back-btn {
+      flex: 1;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .registration-back-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-color);
+    }
+
+    .registration-submit-btn {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+      color: var(--primary-color);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .registration-submit-btn:hover {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    }
+
+    .registration-submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .registration-error-message {
+      color: #ff6b6b;
+      font-size: 14px;
+      margin-top: 16px;
+      padding: 12px;
+      background: rgba(255, 107, 107, 0.1);
+      border-radius: 8px;
+      border: 1px solid rgba(255, 107, 107, 0.2);
+      display: none;
+    }
+
+    /* Update Container Styles */
+    .update-container {
+      display: none;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      width: 100vw;
+      position: relative;
+      z-index: 2;
+    }
+
+    .update-box {
+      background: rgba(8, 8, 8, 0.7);
+      border-radius: 20px;
+      backdrop-filter: blur(40px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      box-shadow:
+        0 16px 40px rgba(0, 0, 0, 0.9),
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
+      padding: 40px;
+      width: 450px;
+      text-align: left;
+      animation: slideIn 0.5s ease-out;
+    }
+
+    .update-title {
+      font-size: 24px;
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 8px;
+      letter-spacing: -0.5px;
+      text-align: center;
+    }
+
+    .update-subtitle {
+      font-size: 14px;
+      color: var(--text-secondary);
+      margin-bottom: 32px;
+      line-height: 1.5;
+      text-align: center;
+    }
+
+    .update-input-group {
+      margin-bottom: 24px;
+    }
+
+    .update-label {
+      display: block;
+      font-size: 14px;
+      color: var(--text-color);
+      margin-bottom: 8px;
+      font-weight: 500;
+    }
+
+    .update-input {
+      width: 100%;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-color);
+      font-size: 16px;
+      outline: none;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .update-input:focus {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.08);
+      box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.1);
+    }
+
+    .update-input::placeholder {
+      color: var(--text-secondary);
+    }
+
+    .update-file-input {
+      display: none;
+    }
+
+    .update-file-input-text {
+      display: block;
+      width: 100%;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      text-align: center;
+      word-break: break-all;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .update-file-input-text:hover {
+      border-color: rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .update-buttons {
+      display: flex;
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .update-back-btn {
+      flex: 1;
+      padding: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-secondary);
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .update-back-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-color);
+    }
+
+    .update-submit-btn {
+      flex: 1;
+      padding: 16px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 100%);
+      color: var(--primary-color);
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+    }
+
+    .update-submit-btn:hover {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0.1) 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
+    }
+
+    .update-submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .update-error-message {
       color: #ff6b6b;
       font-size: 14px;
       margin-top: 16px;
@@ -1019,7 +1385,76 @@
         <button type="submit" class="user-submit-btn">Submit</button>
       </form>
 
+      <div class="user-actions">
+        <button type="button" id="registerNewUser" class="user-action-link">Register New User</button>
+        <span class="user-action-separator">|</span>
+        <button type="button" id="updateUserCreds" class="user-action-link">Update Credentials</button>
+      </div>
+
       <div id="error-message" class="error-message"></div>
+    </div>
+  </div>
+
+  <!-- Registration Container -->
+  <div id="registration-container" class="registration-container">
+    <div class="registration-box">
+      <h2 class="registration-title">Register New User</h2>
+      <p class="registration-subtitle">Create your account to access ZORA</p>
+
+      <form id="registrationForm">
+        <div class="registration-input-group">
+          <label for="regUserId" class="registration-label">User ID</label>
+          <input type="text" id="regUserId" class="registration-input" placeholder="Enter your desired User ID"
+            required>
+        </div>
+
+        <div class="registration-input-group">
+          <label for="todoistToken" class="registration-label">Todoist API Token</label>
+          <input type="text" id="todoistToken" class="registration-input" placeholder="Enter your Todoist API token"
+            required>
+        </div>
+
+        <div class="registration-input-group">
+          <label for="oauthFile" class="registration-label">Google OAuth Credentials</label>
+          <input type="file" id="oauthFile" class="registration-file-input" accept=".json" required>
+          <span class="file-input-text">Upload credentials JSON file</span>
+        </div>
+
+        <div class="registration-buttons">
+          <button type="button" id="backToLogin" class="registration-back-btn">Back to Login</button>
+          <button type="submit" class="registration-submit-btn">Register</button>
+        </div>
+      </form>
+
+      <div id="registration-error-message" class="registration-error-message"></div>
+    </div>
+  </div>
+
+  <!-- Update User Container -->
+  <div id="update-container" class="update-container">
+    <div class="update-box">
+      <h2 class="update-title">Update User Credentials</h2>
+      <p class="update-subtitle">Update your credentials for <span id="updateUserId"></span></p>
+
+      <form id="updateForm">
+        <div class="update-input-group">
+          <label for="updateTodoistToken" class="update-label">Todoist API Token (optional)</label>
+          <input type="text" id="updateTodoistToken" class="update-input" placeholder="Enter new Todoist API token">
+        </div>
+
+        <div class="update-input-group">
+          <label for="updateOauthFile" class="update-label">Google OAuth Credentials (optional)</label>
+          <input type="file" id="updateOauthFile" class="update-file-input" accept=".json">
+          <span class="update-file-input-text">Upload new credentials JSON file</span>
+        </div>
+
+        <div class="update-buttons">
+          <button type="button" id="backFromUpdate" class="update-back-btn">Back to Login</button>
+          <button type="submit" class="update-submit-btn">Update</button>
+        </div>
+      </form>
+
+      <div id="update-error-message" class="update-error-message"></div>
     </div>
   </div>
 
@@ -1088,7 +1523,12 @@
       const userIdInput = document.getElementById('userId');
       const errorMessage = document.getElementById('error-message');
 
-      // Bubble click handler
+      // Skip landing page and go directly to user prompt
+      landingContainer.style.display = 'none';
+      userPromptContainer.style.display = 'flex';
+      userIdInput.focus();
+
+      // Bubble click handler (kept for compatibility)
       zoraBubble.addEventListener('click', function () {
         landingContainer.style.display = 'none';
         userPromptContainer.style.display = 'flex';
@@ -1143,9 +1583,289 @@
         }
       });
 
-      function showError(message) {
+      // Registration and Update UI handlers
+      const registrationContainer = document.getElementById('registration-container');
+      const updateContainer = document.getElementById('update-container');
+      const registerNewUserBtn = document.getElementById('registerNewUser');
+      const updateUserCredsBtn = document.getElementById('updateUserCreds');
+      const backToLoginBtn = document.getElementById('backToLogin');
+      const backFromUpdateBtn = document.getElementById('backFromUpdate');
+
+      // Show registration form
+      registerNewUserBtn.addEventListener('click', function () {
+        userPromptContainer.style.display = 'none';
+        registrationContainer.style.display = 'flex';
+        document.getElementById('regUserId').focus();
+      });
+
+      // Show update form
+      updateUserCredsBtn.addEventListener('click', async function () {
+        const userId = userIdInput.value.trim().toLowerCase();
+        if (!userId) {
+          showError('Please enter your User ID first');
+          return;
+        }
+
+        // Check if user exists before allowing update
+        try {
+          const response = await fetch('/validate-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ user_id: userId })
+          });
+
+          const result = await response.json();
+
+          if (!response.ok || !result.valid) {
+            showError('User not found. Please register first or check your User ID.');
+            return;
+          }
+
+          // User exists, proceed to update form
+          document.getElementById('updateUserId').textContent = userId;
+          userPromptContainer.style.display = 'none';
+          updateContainer.style.display = 'flex';
+          document.getElementById('updateTodoistToken').focus();
+        } catch (error) {
+          console.error('User validation error:', error);
+          showError('Connection error. Please try again.');
+        }
+      });
+
+      // Back to login from registration
+      backToLoginBtn.addEventListener('click', function () {
+        registrationContainer.style.display = 'none';
+        userPromptContainer.style.display = 'flex';
+        clearRegistrationForm();
+        userIdInput.focus();
+      });
+
+      // Back to login from update
+      backFromUpdateBtn.addEventListener('click', function () {
+        updateContainer.style.display = 'none';
+        userPromptContainer.style.display = 'flex';
+        clearUpdateForm();
+        userIdInput.focus();
+      });
+
+      // File input handlers
+      const fileInputText = document.querySelector('.file-input-text');
+      const oauthFileInput = document.getElementById('oauthFile');
+
+      fileInputText.addEventListener('click', function () {
+        oauthFileInput.click();
+      });
+
+      oauthFileInput.addEventListener('change', function () {
+        if (this.files.length > 0) {
+          fileInputText.textContent = this.files[0].name;
+          fileInputText.style.color = 'var(--text-color)';
+        } else {
+          fileInputText.textContent = 'Upload credentials JSON file';
+          fileInputText.style.color = 'var(--text-secondary)';
+        }
+      });
+
+      // Update file input handlers
+      const updateFileInputText = document.querySelector('.update-file-input-text');
+      const updateOauthFileInput = document.getElementById('updateOauthFile');
+
+      updateFileInputText.addEventListener('click', function () {
+        updateOauthFileInput.click();
+      });
+
+      updateOauthFileInput.addEventListener('change', function () {
+        if (this.files.length > 0) {
+          updateFileInputText.textContent = this.files[0].name;
+          updateFileInputText.style.color = 'var(--text-color)';
+        } else {
+          updateFileInputText.textContent = 'Upload new credentials JSON file';
+          updateFileInputText.style.color = 'var(--text-secondary)';
+        }
+      });
+
+      // Registration form submission
+      const registrationForm = document.getElementById('registrationForm');
+      registrationForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const userId = document.getElementById('regUserId').value.trim().toLowerCase();
+        const todoistToken = document.getElementById('todoistToken').value.trim();
+        const oauthFile = document.getElementById('oauthFile').files[0];
+
+        if (!userId || !todoistToken || !oauthFile) {
+          showRegistrationError('All fields are required');
+          return;
+        }
+
+        try {
+          // First upload the credentials file
+          const formData = new FormData();
+          formData.append('file', oauthFile);
+          formData.append('user_id', userId);
+
+          const uploadResponse = await fetch('/upload-credentials', {
+            method: 'POST',
+            body: formData
+          });
+
+          const uploadResult = await uploadResponse.json();
+
+          if (!uploadResponse.ok || !uploadResult.success) {
+            showRegistrationError(uploadResult.message || 'Failed to upload credentials file');
+            return;
+          }
+
+          // Then register the user
+          const registerResponse = await fetch('/register-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              user_id: userId,
+              todoist_api_token: todoistToken,
+              oauth_credentials_filename: uploadResult.filename
+            })
+          });
+
+          const registerResult = await registerResponse.json();
+
+          if (registerResult.success) {
+            // Registration successful, go back to login
+            clearRegistrationForm();
+            registrationContainer.style.display = 'none';
+            userPromptContainer.style.display = 'flex';
+            userIdInput.value = userId;
+            showError('Registration successful! Please log in.', 'success');
+          } else {
+            showRegistrationError(registerResult.message || 'Registration failed');
+          }
+        } catch (error) {
+          console.error('Registration error:', error);
+          showRegistrationError('Connection error. Please try again.');
+        }
+      });
+
+      // Update form submission
+      const updateForm = document.getElementById('updateForm');
+      updateForm.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const userId = document.getElementById('updateUserId').textContent;
+        const todoistToken = document.getElementById('updateTodoistToken').value.trim();
+        const oauthFile = document.getElementById('updateOauthFile').files[0];
+
+        if (!todoistToken && !oauthFile) {
+          showUpdateError('At least one field must be provided for update');
+          return;
+        }
+
+        try {
+          let oauthFilename = null;
+
+          // Upload credentials file if provided
+          if (oauthFile) {
+            const formData = new FormData();
+            formData.append('file', oauthFile);
+            formData.append('user_id', userId);
+
+            const uploadResponse = await fetch('/upload-credentials', {
+              method: 'POST',
+              body: formData
+            });
+
+            const uploadResult = await uploadResponse.json();
+
+            if (!uploadResponse.ok || !uploadResult.success) {
+              showUpdateError(uploadResult.message || 'Failed to upload credentials file');
+              return;
+            }
+
+            oauthFilename = uploadResult.filename;
+          }
+
+          // Update user credentials
+          const updateData = { user_id: userId };
+          if (todoistToken) updateData.todoist_api_token = todoistToken;
+          if (oauthFilename) updateData.oauth_credentials_filename = oauthFilename;
+
+          const updateResponse = await fetch('/update-user', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(updateData)
+          });
+
+          const updateResult = await updateResponse.json();
+
+          if (updateResult.success) {
+            // Update successful, go back to login
+            clearUpdateForm();
+            updateContainer.style.display = 'none';
+            userPromptContainer.style.display = 'flex';
+            showError('Credentials updated successfully!', 'success');
+          } else {
+            showUpdateError(updateResult.message || 'Update failed');
+          }
+        } catch (error) {
+          console.error('Update error:', error);
+          showUpdateError('Connection error. Please try again.');
+        }
+      });
+
+      function clearRegistrationForm() {
+        document.getElementById('regUserId').value = '';
+        document.getElementById('todoistToken').value = '';
+        document.getElementById('oauthFile').value = '';
+        fileInputText.textContent = 'Upload credentials JSON file';
+        fileInputText.style.color = 'var(--text-secondary)';
+        document.getElementById('registration-error-message').style.display = 'none';
+      }
+
+      function clearUpdateForm() {
+        document.getElementById('updateTodoistToken').value = '';
+        document.getElementById('updateOauthFile').value = '';
+        updateFileInputText.textContent = 'Upload new credentials JSON file';
+        updateFileInputText.style.color = 'var(--text-secondary)';
+        document.getElementById('update-error-message').style.display = 'none';
+      }
+
+      function showRegistrationError(message) {
+        const errorDiv = document.getElementById('registration-error-message');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+          errorDiv.style.display = 'none';
+        }, 5000);
+      }
+
+      function showUpdateError(message) {
+        const errorDiv = document.getElementById('update-error-message');
+        errorDiv.textContent = message;
+        errorDiv.style.display = 'block';
+        setTimeout(() => {
+          errorDiv.style.display = 'none';
+        }, 5000);
+      }
+
+      function showError(message, type = 'error') {
         errorMessage.textContent = message;
         errorMessage.style.display = 'block';
+
+        if (type === 'success') {
+          errorMessage.style.color = '#4CAF50';
+          errorMessage.style.background = 'rgba(76, 175, 80, 0.1)';
+          errorMessage.style.borderColor = 'rgba(76, 175, 80, 0.2)';
+        } else {
+          errorMessage.style.color = '#ff6b6b';
+          errorMessage.style.background = 'rgba(255, 107, 107, 0.1)';
+          errorMessage.style.borderColor = 'rgba(255, 107, 107, 0.2)';
+        }
+
         setTimeout(() => {
           errorMessage.style.display = 'none';
         }, 5000);

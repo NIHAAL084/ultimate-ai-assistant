@@ -29,27 +29,19 @@ def get_calendar_env_for_user(user_id: Optional[str] = None) -> Dict[str, str]:
             normalized_user_id = user_id.lower().strip()
             user_env = UserEnvironmentManager(normalized_user_id)
             google_oauth_credentials = user_env.get_env_var("GOOGLE_OAUTH_CREDENTIALS")
-            google_calendar_mcp_token_path = user_env.get_env_var("GOOGLE_CALENDAR_MCP_TOKEN_PATH")
             
             # Resolve relative paths to absolute paths
             if google_oauth_credentials and not os.path.isabs(google_oauth_credentials):
                 # Get the project root directory (ultimate-ai-assistant)
                 project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
                 google_oauth_credentials = os.path.join(project_root, google_oauth_credentials)
-            
-            if google_calendar_mcp_token_path and not os.path.isabs(google_calendar_mcp_token_path):
-                # Get the project root directory (ultimate-ai-assistant)
-                project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
-                google_calendar_mcp_token_path = os.path.join(project_root, google_calendar_mcp_token_path)
                 
         except Exception:
             # Fall back to None if user-specific environment is not available
             google_oauth_credentials = None
-            google_calendar_mcp_token_path = None
     else:
         # No user_id provided, use None
         google_oauth_credentials = None
-        google_calendar_mcp_token_path = None
     
     if google_oauth_credentials is None:
         print(f"⚠️ GOOGLE_OAUTH_CREDENTIALS not set for user {user_id or 'default'} - Calendar agent will have limited functionality")
@@ -58,9 +50,6 @@ def get_calendar_env_for_user(user_id: Optional[str] = None) -> Dict[str, str]:
     calendar_env: Dict[str, str] = {}
     if google_oauth_credentials:
         calendar_env["GOOGLE_OAUTH_CREDENTIALS"] = google_oauth_credentials
-    
-    if google_calendar_mcp_token_path:
-        calendar_env["GOOGLE_CALENDAR_MCP_TOKEN_PATH"] = google_calendar_mcp_token_path
     
     return calendar_env
 
