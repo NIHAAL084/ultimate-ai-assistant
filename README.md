@@ -1,63 +1,11 @@
+
 # ZORA - Ultimate AI Assistant 🤖
 
 **ZORA** is a sophisticated multi-modal AI assistant powered by Google's latest Gemini 2.0 Flash model and Agent Development Kit (ADK). It combines the conversational abilities of ChatGPT with advanced voice interaction, persistent memory, and real-world integrations for calendar and task management.
 
 ## 🎯 What Makes ZORA Different
 
-Unlike simple chatbots, ZORA```
-Calendar Agent → MCPToolset → @nihaal084/google-calendar-mcp
-Task Agent → MCPToolset → @nihaal084/todoist-mcp-server
-Gmail Agent → MCPToolset → @gongrzhe/server-gmail-autoauth-mcp server
-
-```
-
-### MCP Server Implementation
-
-Each sub-agent connects to dedicated Node.js MCP servers:
-
-```python
-# Calendar Agent MCP Configuration
-MCPToolset(
-    connection_params=StdioConnectionParams(
-        server_params=StdioServerParameters(
-            command="uv",
-            args=["run", "npx", "-y", "@nihaal084/google-calendar-mcp"],
-            env={
-                "GOOGLE_OAUTH_CREDENTIALS": user_oauth_path,
-                "GOOGLE_CALENDAR_MCP_TOKEN_PATH": user_token_path
-            },
-        ),
-        timeout=60.0,
-    )
-)
-
-# Task Agent MCP Configuration  
-MCPToolset(
-    connection_params=StdioConnectionParams(
-        server_params=StdioServerParameters(
-            command="uv", 
-            args=["run", "npx", "-y", "@nihaal084/todoist-mcp-server"],
-            env={"TODOIST_API_TOKEN": user_token},
-        ),
-        timeout=60.0,
-    )
-)
-
-# Gmail Agent MCP Configuration
-MCPToolset(
-    connection_params=StdioConnectionParams(
-        server_params=StdioServerParameters(
-            command="uv",
-            args=["run", "npx", "@gongrzhe/server-gmail-autoauth-mcp"],
-            env={
-                "GMAIL_OAUTH_PATH": user_oauth_path,
-                "GMAIL_CREDENTIALS_PATH": user_credentials_path
-            },
-        ),
-        timeout=60.0,
-    )
-)
-``` designed as a **complete AI companion** that:
+Unlike simple chatbots, ZORA is designed as a **complete AI companion** that:
 
 - **Remembers everything** across conversations using advanced knowledge graphs
 - **Speaks and listens** with real-time voice interaction
@@ -65,11 +13,32 @@ MCPToolset(
 - **Switches modes seamlessly** between text and voice without interruption
 - **Supports multiple users** with isolated environments and credentials
 
+---
+
+## 🛠️ Why MCP Servers Had To Be Modified
+
+### Google Calendar MCP (`@nihaal084/google-calendar-mcp`)
+
+The original Google Calendar MCP server did **not** support user-specific token file paths. This meant that all users would share the same token file, making true multi-user support impossible and creating security risks. The modified version adds support for the `GOOGLE_CALENDAR_MCP_TOKEN_PATH` environment variable, so each user's tokens are stored in their own file (e.g., `calendar_credentials/credentials_{user_id}.json`).
+
+### Todoist MCP (`@nihaal084/todoist-mcp-server`)
+
+The original Todoist MCP server was **not fully compatible with Google ADK** due to stricter input/output validation requirements. For example, it used integers (e.g., `priority: 4`) where ADK expects strings (e.g., `priority: "4"`). This mismatch caused runtime errors under ADK’s strict schema enforcement.
+
+The updated server addresses these issues and improves overall robustness with:
+
+- **ADK-compatible schema formatting**  
+  Converts integer fields (e.g., `priority`) to strings to satisfy ADK’s validation.
+- **Improved error handling and logging**  
+  Captures and surfaces errors in a structured way for easier debugging.
+
+---
+
 ## ✨ Core Capabilities
 
 ### 💬 **Intelligent Conversation**
 
-- **Gemini 2.0 Flash Model**: Latest Google AI with superior reasoning and multimodal understanding
+- **Gemini 2.0 Flash Model**: Google AI with superior reasoning and multimodal understanding
 - **Persistent Memory**: Remembers conversations across sessions using Zep's knowledge graph technology
 - **Context Awareness**: Always knows the current date/time and maintains conversation context
 - **Multi-User Support**: Each user gets isolated memory and conversation history
@@ -552,50 +521,66 @@ When users reference past conversations, ZORA automatically:
 
 ```directory
 ultimate-ai-assistant/
-├── app/                           # Main application package
-│   ├── __main__.py               # Entry point (python -m app)
-│   ├── main.py                   # FastAPI server, WebSocket handling
-│   ├── config.py                 # Application settings (port 8001, voices)
-│   ├── user_env.py              # Multi-user environment management
-│   │
-│   ├── static/                   # Frontend web interface
-│   │   ├── index.html           # Main application UI
-│   │   └── js/                  # JavaScript modules
-│   │       ├── app.js                   # Core application logic
-│   │       ├── audio-recorder.js        # Audio capture & processing
-│   │       ├── audio-player.js          # Audio playback controls
-│   │       ├── dither-background.js     # Visual effects
-│   │       ├── pcm-recorder-processor.js # PCM audio processing
-│   │       └── pcm-player-processor.js  # PCM audio playback
-│   │
-│   └── assistant/               # AI agent system
-│       ├── agent.py             # Main agent creation with dynamic prompts
-│       ├── prompt.py            # System prompts and instructions
-│       │
-│       ├── tools/               # Agent tools and capabilities
-│       │   ├── document_tools.py        # PDF/DOCX/TXT processing with OCR
-│       │   └── file_tools.py            # File management and registration
-│       │
-│       ├── sub_agents/          # Specialized external service agents
-│       │   ├── calendar_agent/          # Google Calendar MCP integration
-│       │   ├── task_management_agent/   # Todoist MCP integration
-│       │   └── gmail_agent/             # Gmail MCP integration
-│       │
-│       └── utils/               # Core utilities
-│           ├── zep_memory_service.py     # Persistent memory integration
-│           ├── session_memory_manager.py # Session state management
-│           └── data_extractor.py         # Data extraction utilities
-│
-├── user_data/                   # User-specific configurations
-│   ├── .env.{username}         # User environment variables
-│   └── oauth_credentials/      # User OAuth JSON files
-│
-├── tests/                      # Test suite
-├── manage_users.py            # User management CLI tool
-├── pyproject.toml             # Python dependencies (UV package manager)
-├── uv.lock                    # Locked dependency versions
-├── .env.example               # Environment template
-└── .python-version            # Python 3.11 requirement
+├── app/                           # Python backend application
+│   ├── __init__.py                # Marks app as a Python package
+│   ├── __main__.py                # Run app as a module (python -m app)
+│   ├── main.py                    # FastAPI server, API endpoints, WebSocket
+│   ├── config.py                  # App/server/voice configuration constants
+│   ├── user_env.py                # User-specific environment and credential management
+│   ├── static/                    # Frontend (HTML/JS/CSS)
+│   │   ├── index.html             # Main web UI for ZORA
+│   │   └── js/                    # Frontend JavaScript modules
+│   │       ├── app.js                     # Main UI logic, WebSocket, state
+│   │       ├── audio-player.js            # Audio playback (browser AudioWorklet)
+│   │       ├── audio-recorder.js          # Microphone capture (browser AudioWorklet)
+│   │       ├── dither-background.js       # Animated background visual effect
+│   │       ├── pcm-player-processor.js    # AudioWorklet: PCM audio playback processor
+│   │       └── pcm-recorder-processor.js  # AudioWorklet: PCM audio recording processor
+│   ├── uploads/                   # Temporary file upload storage (usually empty)
+│   └── assistant/                 # Core AI agent system and tools
+│       ├── __init__.py            # Marks assistant as a Python package
+│       ├── agent.py               # Main agent creation, prompt, sub-agent wiring
+│       ├── prompt.py              # System prompt and instructions for the agent
+│       ├── tools/                 # Custom agent tools
+│       │   ├── __init__.py
+│       │   ├── document_tools.py          # Unified PDF/DOCX/TXT/image processing, OCR
+│       │   └── file_tools.py              # File upload/registration utilities
+│       ├── sub_agents/            # Specialized sub-agents for external services
+│       │   ├── __init__.py
+│       │   ├── calendar_agent/            # Google Calendar agent (MCP integration)
+│       │   │   ├── __init__.py
+│       │   │   ├── agent.py               # Calendar agent logic
+│       │   │   └── prompt.py              # Calendar agent prompt
+│       │   ├── gmail_agent/               # Gmail agent (MCP integration)
+│       │   │   ├── __init__.py
+│       │   │   ├── agent.py               # Gmail agent logic
+│       │   │   └── prompt.py              # Gmail agent prompt
+│       │   └── task_management_agent/     # Todoist agent (MCP integration)
+│       │       ├── __init__.py
+│       │       ├── agent.py               # Todoist agent logic
+│       │       └── prompt.py              # Todoist agent prompt
+│       └── utils/                 # Utility modules for memory, extraction, etc.
+│           ├── data_extractor.py           # PDF/image/docx data extraction (OCR, parsing)
+│           ├── session_memory_manager.py   # Session-to-memory (Zep) management
+│           └── zep_memory_service.py       # Zep memory service integration
+├── user_data/                     # User-specific environment and credentials
+│   ├── .env.{username}            # Per-user environment variables (API keys, tokens)
+│   ├── .env.template              # Template for new user env files
+│   ├── credentials/               # Google OAuth credentials (per user)
+│   │   └── credentials_{username}.json
+│   ├── gmail_credentials/         # Gmail OAuth tokens (per user)
+│   │   └── credentials_{username}.json
+│   └── calendar_credentials/      # Calendar OAuth tokens (per user)
+│       └── credentials_{username}.json
+├── tests/                         # Python test suite
+│   └── test_data_extractor.py     # Tests for data extraction utilities
+├── manage_users.py                # CLI for user environment setup/validation
+├── pyproject.toml                 # Python dependencies and project metadata
+├── uv.lock                        # Locked dependency versions for UV
+├── .env.example                   # Example environment file
+├── .python-version                # Python version requirement
+├── screenshots/                   # (Empty) For UI screenshots
+└── README.md                      # Project documentation
 ```
 
 ## 🔌 API Reference
