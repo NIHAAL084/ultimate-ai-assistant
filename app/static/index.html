@@ -467,7 +467,9 @@
     .status-container {
       padding: 0 20px 20px;
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
     }
 
     .status-indicator {
@@ -480,6 +482,107 @@
       padding: 8px 16px;
       border-radius: 20px;
       border: 1px solid var(--border-color);
+    }
+
+    .back-to-home-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: var(--text-secondary);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+    }
+
+    .back-to-home-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: var(--text-primary);
+      transform: translateY(-1px);
+    }
+
+    .back-to-home-btn i {
+      font-size: 14px;
+    }
+
+    /* Loading spinner styles */
+    .loading-spinner {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 50%;
+      border-top-color: #FFFFFF;
+      animation: spin 1s linear infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .btn-loading {
+      pointer-events: none;
+      opacity: 0.7;
+    }
+
+    .btn-loading .btn-text {
+      opacity: 0.6;
+    }
+
+    /* Password input styling */
+    .password-input {
+      font-family: 'Courier New', monospace;
+      letter-spacing: 1px;
+    }
+
+    .input-with-toggle {
+      position: relative;
+      display: block;
+      width: 100%;
+    }
+
+    .input-with-toggle input {
+      padding-right: 45px !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
+      display: block !important;
+    }
+
+    .password-toggle {
+      position: absolute !important;
+      right: 12px !important;
+      top: 50% !important;
+      transform: translateY(-50%) !important;
+      background: none !important;
+      border: none !important;
+      color: var(--text-secondary) !important;
+      cursor: pointer !important;
+      font-size: 14px !important;
+      padding: 4px !important;
+      transition: color 0.3s ease !important;
+      z-index: 10 !important;
+      pointer-events: auto !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      width: 32px !important;
+      height: 32px !important;
+      flex-shrink: 0 !important;
+    }
+
+    .password-toggle:hover {
+      color: var(--text-primary) !important;
+    }
+
+    .password-toggle:focus {
+      outline: none !important;
     }
 
     .status-dot {
@@ -1271,8 +1374,13 @@
 
         <div class="registration-input-group">
           <label for="todoistToken" class="registration-label">Todoist API Token</label>
-          <input type="text" id="todoistToken" class="registration-input" placeholder="Enter your Todoist API token"
-            required>
+          <div class="input-with-toggle">
+            <input type="password" id="todoistToken" class="registration-input password-input"
+              placeholder="Enter your Todoist API token" required>
+            <button type="button" class="password-toggle" onclick="togglePassword('todoistToken')">
+              <i class="fas fa-eye" id="todoistToken-toggle-icon"></i>
+            </button>
+          </div>
         </div>
 
         <div class="registration-input-group">
@@ -1283,7 +1391,9 @@
 
         <div class="registration-buttons">
           <button type="button" id="backToLogin" class="registration-back-btn">Back to Login</button>
-          <button type="submit" class="registration-submit-btn">Register</button>
+          <button type="submit" class="registration-submit-btn" id="registerSubmitBtn">
+            <span class="btn-text">Register</span>
+          </button>
         </div>
       </form>
 
@@ -1300,7 +1410,13 @@
       <form id="updateForm">
         <div class="update-input-group">
           <label for="updateTodoistToken" class="update-label">Todoist API Token (optional)</label>
-          <input type="text" id="updateTodoistToken" class="update-input" placeholder="Enter new Todoist API token">
+          <div class="input-with-toggle">
+            <input type="password" id="updateTodoistToken" class="update-input password-input"
+              placeholder="Enter new Todoist API token">
+            <button type="button" class="password-toggle" onclick="togglePassword('updateTodoistToken')">
+              <i class="fas fa-eye" id="updateTodoistToken-toggle-icon"></i>
+            </button>
+          </div>
         </div>
 
         <div class="update-input-group">
@@ -1311,7 +1427,9 @@
 
         <div class="update-buttons">
           <button type="button" id="backFromUpdate" class="update-back-btn">Back to Login</button>
-          <button type="submit" class="update-submit-btn">Update</button>
+          <button type="submit" class="update-submit-btn" id="updateSubmitBtn">
+            <span class="btn-text">Update</span>
+          </button>
         </div>
       </form>
 
@@ -1366,6 +1484,10 @@
             <span>Recording</span>
           </div>
         </div>
+        <button type="button" id="backToHome" class="back-to-home-btn">
+          <i class="fas fa-home"></i>
+          <span>Back to Home</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1373,6 +1495,109 @@
   <script>
     // Global user ID variable
     let currentUserId = null;
+    let disconnectionTimer = null;
+
+    // Password toggle functionality
+    function togglePassword(inputId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(inputId + '-toggle-icon');
+
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+      } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+      }
+    }
+
+    // Loading state management
+    function setButtonLoading(buttonId, loading) {
+      const button = document.getElementById(buttonId);
+      const buttonText = button.querySelector('.btn-text');
+
+      if (loading) {
+        button.classList.add('btn-loading');
+        const spinner = document.createElement('span');
+        spinner.className = 'loading-spinner';
+        button.insertBefore(spinner, buttonText);
+        buttonText.textContent = 'Processing...';
+      } else {
+        button.classList.remove('btn-loading');
+        const spinner = button.querySelector('.loading-spinner');
+        if (spinner) {
+          spinner.remove();
+        }
+        // Reset button text based on button type
+        if (buttonId === 'registerSubmitBtn') {
+          buttonText.textContent = 'Register';
+        } else if (buttonId === 'updateSubmitBtn') {
+          buttonText.textContent = 'Update';
+        }
+      }
+    }
+
+    // Disconnection timeout management
+    function startDisconnectionTimer() {
+      // Clear existing timer
+      if (disconnectionTimer) {
+        clearTimeout(disconnectionTimer);
+      }
+
+      // Set 60-second timer
+      disconnectionTimer = setTimeout(() => {
+        // Show disconnection message
+        if (currentUserId) {
+          const statusText = document.getElementById('connection-status');
+          if (statusText) {
+            statusText.textContent = 'Disconnected - Redirecting...';
+          }
+
+          // Wait 2 seconds then redirect to home
+          setTimeout(() => {
+            returnToHome();
+          }, 2000);
+        }
+      }, 60000); // 60 seconds
+    }
+
+    // Reset the disconnection timer on user activity
+    function resetDisconnectionTimer() {
+      if (currentUserId) {
+        startDisconnectionTimer();
+      }
+    }
+
+    // Return to home function
+    function returnToHome() {
+      currentUserId = null;
+      if (disconnectionTimer) {
+        clearTimeout(disconnectionTimer);
+        disconnectionTimer = null;
+      }
+
+      // Hide chat interface and show login
+      const mainContainer = document.getElementById('main-container');
+      const userPromptContainer = document.getElementById('user-prompt-container');
+
+      mainContainer.classList.add('chat-hidden');
+      userPromptContainer.style.display = 'flex';
+
+      // Clear user ID input
+      const userIdInput = document.getElementById('userId');
+      if (userIdInput) {
+        userIdInput.value = '';
+        userIdInput.focus();
+      }
+
+      // Reset status
+      const statusDot = document.getElementById('status-dot');
+      const statusText = document.getElementById('connection-status');
+      if (statusDot) statusDot.classList.remove('connected');
+      if (statusText) statusText.textContent = 'Connecting...';
+    }
 
     // User authentication flow
     document.addEventListener('DOMContentLoaded', function () {
@@ -1414,6 +1639,9 @@
             userPromptContainer.style.display = 'none';
             mainContainer.classList.remove('chat-hidden');
 
+            // Start disconnection timer
+            startDisconnectionTimer();
+
             // Initialize the chat application with the user ID
             if (window.initializeApp) {
               window.initializeApp(userId);
@@ -1433,6 +1661,14 @@
           userIdForm.dispatchEvent(new Event('submit'));
         }
       });
+
+      // Back to home from chat
+      const backToHomeBtn = document.getElementById('backToHome');
+      if (backToHomeBtn) {
+        backToHomeBtn.addEventListener('click', function () {
+          returnToHome();
+        });
+      }
 
       // Registration and Update UI handlers
       const registrationContainer = document.getElementById('registration-container');
@@ -1551,6 +1787,9 @@
           return;
         }
 
+        // Show loading state
+        setButtonLoading('registerSubmitBtn', true);
+
         try {
           // First upload the credentials file
           const formData = new FormData();
@@ -1597,6 +1836,9 @@
         } catch (error) {
           console.error('Registration error:', error);
           showRegistrationError('Connection error. Please try again.');
+        } finally {
+          // Hide loading state
+          setButtonLoading('registerSubmitBtn', false);
         }
       });
 
@@ -1613,6 +1855,9 @@
           showUpdateError('At least one field must be provided for update');
           return;
         }
+
+        // Show loading state
+        setButtonLoading('updateSubmitBtn', true);
 
         try {
           let oauthFilename = null;
@@ -1654,23 +1899,86 @@
           const updateResult = await updateResponse.json();
 
           if (updateResult.success) {
+            // If OAuth credentials were updated, trigger authentication setup
+            if (oauthFilename) {
+              try {
+                console.log('Starting authentication setup for user:', userId);
+                showUpdateError('Setting up Gmail authentication...', 'info');
+
+                // Setup Gmail authentication
+                console.log('Calling Gmail auth setup...');
+                const gmailAuthResponse = await fetch('/setup-gmail-auth', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ user_id: userId })
+                });
+
+                const gmailAuthResult = await gmailAuthResponse.json();
+                console.log('Gmail auth result:', gmailAuthResult);
+
+                // Setup Calendar authentication
+                showUpdateError('Setting up Calendar authentication...', 'info');
+
+                console.log('Calling Calendar auth setup...');
+                const calendarAuthResponse = await fetch('/setup-calendar-auth', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({ user_id: userId })
+                });
+
+                const calendarAuthResult = await calendarAuthResponse.json();
+                console.log('Calendar auth result:', calendarAuthResult);
+
+                // Show results
+                const gmailSuccess = gmailAuthResult.success;
+                const calendarSuccess = calendarAuthResult.success;
+
+                if (gmailSuccess && calendarSuccess) {
+                  showError('Credentials updated successfully! Gmail and Calendar authentication configured.', 'success');
+                } else if (gmailSuccess) {
+                  showError(`Credentials updated successfully! Gmail authentication configured. Calendar setup failed: ${calendarAuthResult.message}`, 'warning');
+                } else if (calendarSuccess) {
+                  showError(`Credentials updated successfully! Calendar authentication configured. Gmail setup failed: ${gmailAuthResult.message}`, 'warning');
+                } else {
+                  showError(`Credentials updated but authentication setup failed. Gmail: ${gmailAuthResult.message}, Calendar: ${calendarAuthResult.message}`, 'warning');
+                }
+              } catch (authError) {
+                console.error('Authentication setup error:', authError);
+                showError('Credentials updated but authentication setup failed. Please try again.', 'warning');
+              }
+            } else {
+              showError('Credentials updated successfully!', 'success');
+            }
+
             // Update successful, go back to login
             clearUpdateForm();
             updateContainer.style.display = 'none';
             userPromptContainer.style.display = 'flex';
-            showError('Credentials updated successfully!', 'success');
           } else {
             showUpdateError(updateResult.message || 'Update failed');
           }
         } catch (error) {
           console.error('Update error:', error);
           showUpdateError('Connection error. Please try again.');
+        } finally {
+          // Hide loading state
+          setButtonLoading('updateSubmitBtn', false);
         }
       });
 
       function clearRegistrationForm() {
         document.getElementById('regUserId').value = '';
-        document.getElementById('todoistToken').value = '';
+        const todoistInput = document.getElementById('todoistToken');
+        todoistInput.value = '';
+        todoistInput.type = 'password'; // Reset to password type
+        const todoistIcon = document.getElementById('todoistToken-toggle-icon');
+        todoistIcon.classList.remove('fa-eye-slash');
+        todoistIcon.classList.add('fa-eye');
+
         document.getElementById('oauthFile').value = '';
         fileInputText.textContent = 'Upload credentials JSON file';
         fileInputText.style.color = 'var(--text-secondary)';
@@ -1678,7 +1986,13 @@
       }
 
       function clearUpdateForm() {
-        document.getElementById('updateTodoistToken').value = '';
+        const updateTodoistInput = document.getElementById('updateTodoistToken');
+        updateTodoistInput.value = '';
+        updateTodoistInput.type = 'password'; // Reset to password type
+        const updateTodoistIcon = document.getElementById('updateTodoistToken-toggle-icon');
+        updateTodoistIcon.classList.remove('fa-eye-slash');
+        updateTodoistIcon.classList.add('fa-eye');
+
         document.getElementById('updateOauthFile').value = '';
         updateFileInputText.textContent = 'Upload new credentials JSON file';
         updateFileInputText.style.color = 'var(--text-secondary)';
@@ -1694,13 +2008,32 @@
         }, 5000);
       }
 
-      function showUpdateError(message) {
+      function showUpdateError(message, type = 'error') {
         const errorDiv = document.getElementById('update-error-message');
         errorDiv.textContent = message;
         errorDiv.style.display = 'block';
+
+        if (type === 'success') {
+          errorDiv.style.color = '#4CAF50';
+          errorDiv.style.background = 'rgba(76, 175, 80, 0.1)';
+          errorDiv.style.borderColor = 'rgba(76, 175, 80, 0.2)';
+        } else if (type === 'info') {
+          errorDiv.style.color = '#2196F3';
+          errorDiv.style.background = 'rgba(33, 150, 243, 0.1)';
+          errorDiv.style.borderColor = 'rgba(33, 150, 243, 0.2)';
+        } else if (type === 'warning') {
+          errorDiv.style.color = '#FF9800';
+          errorDiv.style.background = 'rgba(255, 152, 0, 0.1)';
+          errorDiv.style.borderColor = 'rgba(255, 152, 0, 0.2)';
+        } else {
+          errorDiv.style.color = '#ff6b6b';
+          errorDiv.style.background = 'rgba(255, 107, 107, 0.1)';
+          errorDiv.style.borderColor = 'rgba(255, 107, 107, 0.2)';
+        }
+
         setTimeout(() => {
           errorDiv.style.display = 'none';
-        }, 5000);
+        }, type === 'info' ? 3000 : 5000); // Shorter timeout for info messages
       }
 
       function showError(message, type = 'error') {
@@ -1711,6 +2044,10 @@
           errorMessage.style.color = '#4CAF50';
           errorMessage.style.background = 'rgba(76, 175, 80, 0.1)';
           errorMessage.style.borderColor = 'rgba(76, 175, 80, 0.2)';
+        } else if (type === 'warning') {
+          errorMessage.style.color = '#FF9800';
+          errorMessage.style.background = 'rgba(255, 152, 0, 0.1)';
+          errorMessage.style.borderColor = 'rgba(255, 152, 0, 0.2)';
         } else {
           errorMessage.style.color = '#ff6b6b';
           errorMessage.style.background = 'rgba(255, 107, 107, 0.1)';
@@ -1741,6 +2078,12 @@
       } else {
         console.error('Dither background container not found');
       }
+
+      // Add activity listeners to reset disconnection timer
+      const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
+      activityEvents.forEach(event => {
+        document.addEventListener(event, resetDisconnectionTimer, true);
+      });
     });
   </script>
 </body>

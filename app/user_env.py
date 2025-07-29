@@ -196,9 +196,11 @@ TODOIST_API_TOKEN={todoist_token}
             # Get OAuth credentials path
             oauth_credentials = self.get_env_var("GOOGLE_OAUTH_CREDENTIALS")
             if not oauth_credentials:
+                error_msg = "Google OAuth credentials not found for user"
+                print(f"❌ Gmail auth error for {self.user_id}: {error_msg}")
                 return {
                     "success": False,
-                    "message": "Google OAuth credentials not found for user"
+                    "message": error_msg
                 }
             
             # Resolve relative path to absolute
@@ -206,18 +208,32 @@ TODOIST_API_TOKEN={todoist_token}
                 oauth_credentials = os.path.join(self.base_dir, oauth_credentials)
             
             if not os.path.exists(oauth_credentials):
+                error_msg = f"OAuth credentials file not found at: {oauth_credentials}"
+                print(f"❌ Gmail auth error for {self.user_id}: {error_msg}")
                 return {
                     "success": False,
                     "message": "OAuth credentials file not found"
                 }
             
+            print(f"🔑 Using OAuth credentials: {oauth_credentials}")
+            
             # Create Gmail MCP directory
             gmail_mcp_dir = Path.home() / ".gmail-mcp"
             gmail_mcp_dir.mkdir(exist_ok=True)
+            print(f"📁 Gmail MCP directory: {gmail_mcp_dir}")
             
             # Copy OAuth credentials to Gmail MCP directory as gcp-oauth.keys.json
             gcp_oauth_keys_path = gmail_mcp_dir / "gcp-oauth.keys.json"
             shutil.copy2(oauth_credentials, gcp_oauth_keys_path)
+            print(f"📋 Copied OAuth credentials to: {gcp_oauth_keys_path}")
+            
+            # Remove any existing credentials.json (force fresh authentication)
+            global_credentials_path = gmail_mcp_dir / "credentials.json"
+            if global_credentials_path.exists():
+                global_credentials_path.unlink()
+                print(f"🗑️ Removed existing Gmail credentials for fresh authentication")
+            
+            print(f"🚀 Starting Gmail authentication for user {self.user_id}...")
             
             # Run Gmail authentication
             auth_process = subprocess.run(
@@ -228,27 +244,44 @@ TODOIST_API_TOKEN={todoist_token}
                 timeout=120  # 2 minute timeout
             )
             
+            print(f"📤 Gmail auth command output:")
+            print(f"   Return code: {auth_process.returncode}")
+            print(f"   STDOUT: {auth_process.stdout}")
+            print(f"   STDERR: {auth_process.stderr}")
+            
             if auth_process.returncode != 0:
+                error_msg = f"Gmail authentication failed: {auth_process.stderr}"
+                print(f"❌ Gmail auth failed for {self.user_id}: {error_msg}")
                 return {
                     "success": False,
-                    "message": f"Gmail authentication failed: {auth_process.stderr}"
+                    "message": error_msg
                 }
             
             # Check if credentials.json was generated
-            global_credentials_path = gmail_mcp_dir / "credentials.json"
             if not global_credentials_path.exists():
+                error_msg = "Gmail credentials were not generated"
+                print(f"❌ Gmail auth error for {self.user_id}: {error_msg}")
+                print(f"🔍 Expected credential file: {global_credentials_path}")
                 return {
                     "success": False,
-                    "message": "Gmail credentials were not generated"
+                    "message": error_msg
                 }
             
             # Create user-specific gmail_credentials directory
             gmail_credentials_dir = self.env_dir / "gmail_credentials"
             gmail_credentials_dir.mkdir(exist_ok=True)
+            print(f"📁 Gmail credentials directory: {gmail_credentials_dir}")
             
             # Move credentials to user-specific location
             user_credentials_path = gmail_credentials_dir / f"credentials_{self.user_id}.json"
+            
+            # Remove existing user credentials if they exist
+            if user_credentials_path.exists():
+                user_credentials_path.unlink()
+                print(f"🗑️ Removed existing user-specific Gmail credentials")
+            
             shutil.move(str(global_credentials_path), str(user_credentials_path))
+            print(f"📦 Moved Gmail credentials to: {user_credentials_path}")
             
             # Clean up global Gmail MCP directory for next user
             try:
@@ -260,10 +293,12 @@ TODOIST_API_TOKEN={todoist_token}
                 if gmail_mcp_dir.exists() and not any(gmail_mcp_dir.iterdir()):
                     gmail_mcp_dir.rmdir()
                     
-                print(f"Cleaned up global Gmail MCP directory for user {self.user_id}")
+                print(f"🧹 Cleaned up global Gmail MCP directory for user {self.user_id}")
             except Exception as cleanup_error:
                 # Don't fail the whole process if cleanup fails, just log it
                 logger.warning(f"Failed to clean up Gmail MCP directory: {cleanup_error}")
+            
+            print(f"✅ Gmail authentication completed successfully for user {self.user_id}")
             
             return {
                 "success": True,
@@ -272,15 +307,19 @@ TODOIST_API_TOKEN={todoist_token}
             }
             
         except subprocess.TimeoutExpired:
+            error_msg = "Gmail authentication timed out. Please try again."
+            print(f"⏰ Gmail auth timeout for {self.user_id}: {error_msg}")
             return {
                 "success": False,
-                "message": "Gmail authentication timed out. Please try again."
+                "message": error_msg
             }
         except Exception as e:
+            error_msg = f"Error setting up Gmail authentication: {str(e)}"
             logger.error(f"Error setting up Gmail authentication for user {self.user_id}: {e}")
+            print(f"💥 Gmail auth exception for {self.user_id}: {error_msg}")
             return {
                 "success": False,
-                "message": f"Error setting up Gmail authentication: {str(e)}"
+                "message": error_msg
             }
 
     def setup_calendar_authentication(self) -> Dict[str, Union[bool, str]]:
@@ -292,9 +331,11 @@ TODOIST_API_TOKEN={todoist_token}
             # Get OAuth credentials path
             oauth_credentials = self.get_env_var("GOOGLE_OAUTH_CREDENTIALS")
             if not oauth_credentials:
+                error_msg = "Google OAuth credentials not found for user"
+                print(f"❌ Calendar auth error for {self.user_id}: {error_msg}")
                 return {
                     "success": False,
-                    "message": "Google OAuth credentials not found for user"
+                    "message": error_msg
                 }
             
             # Resolve relative path to absolute
@@ -302,22 +343,39 @@ TODOIST_API_TOKEN={todoist_token}
                 oauth_credentials = os.path.join(self.base_dir, oauth_credentials)
             
             if not os.path.exists(oauth_credentials):
+                error_msg = f"OAuth credentials file not found at: {oauth_credentials}"
+                print(f"❌ Calendar auth error for {self.user_id}: {error_msg}")
                 return {
                     "success": False,
                     "message": "OAuth credentials file not found"
                 }
             
+            print(f"🔑 Using OAuth credentials: {oauth_credentials}")
+            
             # Create user-specific calendar_credentials directory
             calendar_credentials_dir = self.env_dir / "calendar_credentials"
             calendar_credentials_dir.mkdir(exist_ok=True)
+            print(f"📁 Calendar credentials directory: {calendar_credentials_dir}")
             
             # Set the user-specific token path (this is where tokens will be stored)
             user_tokens_path = calendar_credentials_dir / f"credentials_{self.user_id}.json"
+            print(f"📝 Target token path: {user_tokens_path}")
+            
+            # Remove existing token file if it exists (force fresh authentication)
+            if user_tokens_path.exists():
+                user_tokens_path.unlink()
+                print(f"🗑️ Removed existing token file for fresh authentication")
             
             # Set up environment variables for calendar authentication
             calendar_env = os.environ.copy()
             calendar_env["GOOGLE_OAUTH_CREDENTIALS"] = oauth_credentials
             calendar_env["GOOGLE_CALENDAR_MCP_TOKEN_PATH"] = str(user_tokens_path)
+            
+            print(f"🚀 Starting Calendar authentication for user {self.user_id}...")
+            print(f"📍 Working directory: {self.base_dir}")
+            print(f"🔧 Environment variables set:")
+            print(f"   GOOGLE_OAUTH_CREDENTIALS={oauth_credentials}")
+            print(f"   GOOGLE_CALENDAR_MCP_TOKEN_PATH={user_tokens_path}")
             
             # Run Calendar authentication using published MCP server
             auth_process = subprocess.run(
@@ -329,17 +387,27 @@ TODOIST_API_TOKEN={todoist_token}
                 timeout=120  # 2 minute timeout
             )
             
+            print(f"📤 Calendar auth command output:")
+            print(f"   Return code: {auth_process.returncode}")
+            print(f"   STDOUT: {auth_process.stdout}")
+            print(f"   STDERR: {auth_process.stderr}")
+            
             if auth_process.returncode != 0:
+                error_msg = f"Calendar authentication failed: {auth_process.stderr}"
+                print(f"❌ Calendar auth failed for {self.user_id}: {error_msg}")
                 return {
                     "success": False,
-                    "message": f"Calendar authentication failed: {auth_process.stderr}"
+                    "message": error_msg
                 }
             
             # Check if tokens were generated at the specified location
             if not user_tokens_path.exists():
                 # Check if tokens were generated in the default location and move them
                 default_tokens_path = Path.home() / ".config" / "google-calendar-mcp" / "tokens.json"
+                print(f"🔍 Checking default token location: {default_tokens_path}")
+                
                 if default_tokens_path.exists():
+                    print(f"📦 Found tokens in default location, moving to user-specific location")
                     shutil.move(str(default_tokens_path), str(user_tokens_path))
                     
                     # Clean up the default config directory if it's empty
@@ -347,15 +415,22 @@ TODOIST_API_TOKEN={todoist_token}
                         default_config_dir = Path.home() / ".config" / "google-calendar-mcp"
                         if default_config_dir.exists() and not any(default_config_dir.iterdir()):
                             default_config_dir.rmdir()
-                            
-                        print(f"Moved tokens from default location to user-specific location for user {self.user_id}")
+                            print(f"🧹 Cleaned up empty default config directory")
                     except Exception as cleanup_error:
                         logger.warning(f"Failed to clean up Calendar config directory: {cleanup_error}")
                 else:
+                    error_msg = "Calendar tokens were not generated in any expected location"
+                    print(f"❌ Calendar auth error for {self.user_id}: {error_msg}")
+                    print(f"🔍 Expected locations checked:")
+                    print(f"   Primary: {user_tokens_path}")
+                    print(f"   Fallback: {default_tokens_path}")
                     return {
                         "success": False,
-                        "message": "Calendar tokens were not generated"
+                        "message": error_msg
                     }
+            
+            print(f"✅ Calendar authentication completed successfully for user {self.user_id}")
+            print(f"📋 Token file created at: {user_tokens_path}")
             
             return {
                 "success": True,
@@ -364,15 +439,19 @@ TODOIST_API_TOKEN={todoist_token}
             }
             
         except subprocess.TimeoutExpired:
+            error_msg = "Calendar authentication timed out. Please try again."
+            print(f"⏰ Calendar auth timeout for {self.user_id}: {error_msg}")
             return {
                 "success": False,
-                "message": "Calendar authentication timed out. Please try again."
+                "message": error_msg
             }
         except Exception as e:
+            error_msg = f"Error setting up Calendar authentication: {str(e)}"
             logger.error(f"Error setting up Calendar authentication for user {self.user_id}: {e}")
+            print(f"💥 Calendar auth exception for {self.user_id}: {error_msg}")
             return {
                 "success": False,
-                "message": f"Error setting up Calendar authentication: {str(e)}"
+                "message": error_msg
             }
 
 
