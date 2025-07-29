@@ -283,6 +283,98 @@ TODOIST_API_TOKEN={todoist_token}
                 "message": f"Error setting up Gmail authentication: {str(e)}"
             }
 
+    def setup_calendar_authentication(self) -> Dict[str, Union[bool, str]]:
+        """Set up Google Calendar authentication for this user"""
+        import subprocess
+        import shutil
+        
+        try:
+            # Get OAuth credentials path
+            oauth_credentials = self.get_env_var("GOOGLE_OAUTH_CREDENTIALS")
+            if not oauth_credentials:
+                return {
+                    "success": False,
+                    "message": "Google OAuth credentials not found for user"
+                }
+            
+            # Resolve relative path to absolute
+            if not os.path.isabs(oauth_credentials):
+                oauth_credentials = os.path.join(self.base_dir, oauth_credentials)
+            
+            if not os.path.exists(oauth_credentials):
+                return {
+                    "success": False,
+                    "message": "OAuth credentials file not found"
+                }
+            
+            # Create user-specific calendar_credentials directory
+            calendar_credentials_dir = self.env_dir / "calendar_credentials"
+            calendar_credentials_dir.mkdir(exist_ok=True)
+            
+            # Set the user-specific token path (this is where tokens will be stored)
+            user_tokens_path = calendar_credentials_dir / f"credentials_{self.user_id}.json"
+            
+            # Set up environment variables for calendar authentication
+            calendar_env = os.environ.copy()
+            calendar_env["GOOGLE_OAUTH_CREDENTIALS"] = oauth_credentials
+            calendar_env["GOOGLE_CALENDAR_MCP_TOKEN_PATH"] = str(user_tokens_path)
+            
+            # Run Calendar authentication using published MCP server
+            auth_process = subprocess.run(
+                ["uv", "run", "npx", "-y", "@nihaal084/google-calendar-mcp", "auth"],
+                cwd=str(self.base_dir),
+                capture_output=True,
+                text=True,
+                env=calendar_env,
+                timeout=120  # 2 minute timeout
+            )
+            
+            if auth_process.returncode != 0:
+                return {
+                    "success": False,
+                    "message": f"Calendar authentication failed: {auth_process.stderr}"
+                }
+            
+            # Check if tokens were generated at the specified location
+            if not user_tokens_path.exists():
+                # Check if tokens were generated in the default location and move them
+                default_tokens_path = Path.home() / ".config" / "google-calendar-mcp" / "tokens.json"
+                if default_tokens_path.exists():
+                    shutil.move(str(default_tokens_path), str(user_tokens_path))
+                    
+                    # Clean up the default config directory if it's empty
+                    try:
+                        default_config_dir = Path.home() / ".config" / "google-calendar-mcp"
+                        if default_config_dir.exists() and not any(default_config_dir.iterdir()):
+                            default_config_dir.rmdir()
+                            
+                        print(f"Moved tokens from default location to user-specific location for user {self.user_id}")
+                    except Exception as cleanup_error:
+                        logger.warning(f"Failed to clean up Calendar config directory: {cleanup_error}")
+                else:
+                    return {
+                        "success": False,
+                        "message": "Calendar tokens were not generated"
+                    }
+            
+            return {
+                "success": True,
+                "message": "Calendar authentication completed successfully",
+                "credentials_path": str(user_tokens_path)
+            }
+            
+        except subprocess.TimeoutExpired:
+            return {
+                "success": False,
+                "message": "Calendar authentication timed out. Please try again."
+            }
+        except Exception as e:
+            logger.error(f"Error setting up Calendar authentication for user {self.user_id}: {e}")
+            return {
+                "success": False,
+                "message": f"Error setting up Calendar authentication: {str(e)}"
+            }
+
 
 def get_user_env_var(key: str, default: Optional[str] = None, user_id: Optional[str] = None) -> Optional[str]:
     """Convenience function to get user-specific environment variable"""

@@ -4,7 +4,60 @@
 
 ## 🎯 What Makes ZORA Different
 
-Unlike simple chatbots, ZORA is designed as a **complete AI companion** that:
+Unlike simple chatbots, ZORA```
+Calendar Agent → MCPToolset → @nihaal084/google-calendar-mcp
+Task Agent → MCPToolset → @nihaal084/todoist-mcp-server
+Gmail Agent → MCPToolset → @gongrzhe/server-gmail-autoauth-mcp server
+
+```
+
+### MCP Server Implementation
+
+Each sub-agent connects to dedicated Node.js MCP servers:
+
+```python
+# Calendar Agent MCP Configuration
+MCPToolset(
+    connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command="uv",
+            args=["run", "npx", "-y", "@nihaal084/google-calendar-mcp"],
+            env={
+                "GOOGLE_OAUTH_CREDENTIALS": user_oauth_path,
+                "GOOGLE_CALENDAR_MCP_TOKEN_PATH": user_token_path
+            },
+        ),
+        timeout=60.0,
+    )
+)
+
+# Task Agent MCP Configuration  
+MCPToolset(
+    connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command="uv", 
+            args=["run", "npx", "-y", "@nihaal084/todoist-mcp-server"],
+            env={"TODOIST_API_TOKEN": user_token},
+        ),
+        timeout=60.0,
+    )
+)
+
+# Gmail Agent MCP Configuration
+MCPToolset(
+    connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command="uv",
+            args=["run", "npx", "@gongrzhe/server-gmail-autoauth-mcp"],
+            env={
+                "GMAIL_OAUTH_PATH": user_oauth_path,
+                "GMAIL_CREDENTIALS_PATH": user_credentials_path
+            },
+        ),
+        timeout=60.0,
+    )
+)
+``` designed as a **complete AI companion** that:
 
 - **Remembers everything** across conversations using advanced knowledge graphs
 - **Speaks and listens** with real-time voice interaction
@@ -72,9 +125,9 @@ ZORA implements an **Agent-as-Tool** architecture where specialized sub-agents a
 
 #### **Calendar Agent** (Google Calendar)
 
-- **MCP Server**: `@cocal/google-calendar-mcp` - Specialized Node.js server for Google Calendar API
+- **MCP Server**: `@nihaal084/google-calendar-mcp` - Custom Google Calendar MCP server with user-specific token path support
 - **Agent-as-Tool Integration**: Wrapped as an `AgentTool` and included in the primary agent's toolset
-- **User-Specific Configuration**: Each user's OAuth credentials loaded from their environment file
+- **User-Specific Configuration**: Each user's OAuth credentials and tokens stored in isolated `calendar_credentials/` folder
 - **Capabilities**:
   - Multi-calendar management (personal, work, shared calendars)
   - Natural language scheduling: *"Schedule a meeting with John tomorrow at 2 PM"*
@@ -316,7 +369,7 @@ For full productivity features, set up ZORA to manage your actual calendar, task
 
 ```bash
 # Install Node.js MCP servers (one-time setup)
-npm install -g @cocal/google-calendar-mcp
+npm install -g @nihaal084/google-calendar-mcp
 npm install -g @nihaal084/todoist-mcp-server
 npm install -g @gongrzhe/server-gmail-autoauth-mcp
 
@@ -557,6 +610,8 @@ ultimate-ai-assistant/
 | `/validate-user` | POST | Check if user exists |
 | `/register-user` | POST | Create new user account |
 | `/update-user` | POST | Update user credentials |
+| `/setup-gmail-auth` | POST | Set up Gmail authentication for existing user |
+| `/setup-calendar-auth` | POST | Set up Calendar authentication for existing user |
 | `/upload-credentials` | POST | Upload OAuth files |
 | `/upload` | POST | Process documents/images |
 | `/ws/{session_id}` | WebSocket | Real-time chat interface |
@@ -622,11 +677,18 @@ python manage_users.py switch --user username
 
 ```bash
 user_data/
-├── .env.johndoe              # User's API tokens
-├── .env.alice                # Another user's tokens
-└── oauth_credentials/        # OAuth files
-    ├── johndoe_credentials.json
-    └── alice_credentials.json
+├── .env.johndoe                     # User's API tokens and environment
+├── .env.alice                       # Another user's environment
+├── .env.template                    # Template for new users
+├── credentials/                     # OAuth credentials files
+│   ├── gcp-oauth.keys.json         # Google OAuth credentials
+│   └── credentials_johndoe.json    # User-specific copies
+├── gmail_credentials/               # User-specific Gmail tokens
+│   ├── credentials_johndoe.json    # Gmail authentication tokens
+│   └── credentials_alice.json      # Another user's Gmail tokens
+└── calendar_credentials/            # User-specific Calendar tokens
+    ├── credentials_johndoe.json    # Calendar authentication tokens
+    └── credentials_alice.json      # Another user's Calendar tokens
 ```
 
 ## 🔧 Troubleshooting
@@ -654,7 +716,7 @@ user_data/
 #### **"Calendar/tasks not working"**
 
 - **User registration**: You must register a user account first
-- **MCP servers**: Install Node.js packages globally: `npm install -g @cocal/google-calendar-mcp @nihaal084/todoist-mcp-server`
+- **MCP servers**: Install Node.js packages globally: `npm install -g @nihaal084/google-calendar-mcp @nihaal084/todoist-mcp-server`
 - **OAuth setup**: Ensure Google Calendar API is enabled in your Cloud Console
 - **File upload**: Verify your OAuth JSON file uploaded successfully
 
@@ -719,14 +781,26 @@ For team deployment:
 ### Development Mode
 
 ```bash
-# Run with auto-reload for development
-uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+# Install with development dependencies
+uv sync --extra dev
 
-# Run tests
-python -m pytest tests/
+# Run with auto-reload for development
+uv run uvicorn app.main:app --reload --host 0.0.0.0 --port 8001
+
+# Run tests with coverage
+uv run pytest
 
 # Check code formatting
-black app/ tests/
+uv run black app/ tests/
+
+# Sort imports
+uv run isort app/ tests/
+
+# Type checking
+uv run mypy app/
+
+# Run all quality checks
+uv run pre-commit run --all-files
 ```
 
 ## 🤝 Contributing
@@ -743,8 +817,8 @@ cd ultimate-ai-assistant
 # Create a development branch
 git checkout -b feature/your-feature-name
 
-# Install in development mode
-uv sync --dev
+# Install in development mode with dev dependencies
+uv sync --extra dev
 
 # Make your changes and test thoroughly
 # Submit a pull request with a clear description
@@ -775,6 +849,9 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Google ADK Team**: For the excellent Agent Development Kit
 - **Zep.ai**: For the powerful memory service
 - **MCP Server Authors**: For calendar and task management integrations
+  - `@nihaal084/google-calendar-mcp`: Custom fork with user-specific token path support
+  - `@nihaal084/todoist-mcp-server`: Custom Gemini-compatible Todoist integration
+  - `@gongrzhe/server-gmail-autoauth-mcp`: Gmail MCP server with auto-authentication
 - **Open Source Community**: For the tools and libraries that make this possible
 
 ---

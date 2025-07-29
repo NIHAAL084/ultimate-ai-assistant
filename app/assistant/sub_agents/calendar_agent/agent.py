@@ -28,6 +28,8 @@ def get_calendar_env_for_user(user_id: Optional[str] = None) -> Dict[str, str]:
             # Normalize user_id to lowercase
             normalized_user_id = user_id.lower().strip()
             user_env = UserEnvironmentManager(normalized_user_id)
+            
+            # Calendar MCP Server expects OAuth credentials similar to Gmail
             google_oauth_credentials = user_env.get_env_var("GOOGLE_OAUTH_CREDENTIALS")
             
             # Resolve relative paths to absolute paths
@@ -48,8 +50,22 @@ def get_calendar_env_for_user(user_id: Optional[str] = None) -> Dict[str, str]:
     
     # Environment variables for Google Calendar MCP server
     calendar_env: Dict[str, str] = {}
-    if google_oauth_credentials:
+    if google_oauth_credentials and user_id:
+        # Set up user-specific Calendar paths in user_data
+        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
+        user_data_dir = os.path.join(project_root, "user_data")
+        calendar_credentials_dir = os.path.join(user_data_dir, "calendar_credentials")
+        
+        # Ensure the calendar_credentials directory exists
+        os.makedirs(calendar_credentials_dir, exist_ok=True)
+        
+        # Use the OAuth file for authentication
         calendar_env["GOOGLE_OAUTH_CREDENTIALS"] = google_oauth_credentials
+        
+        # Set user-specific token storage path
+        normalized_user_id = user_id.lower().strip()
+        user_token_path = os.path.join(calendar_credentials_dir, f"credentials_{normalized_user_id}.json")
+        calendar_env["GOOGLE_CALENDAR_MCP_TOKEN_PATH"] = user_token_path
     
     return calendar_env
 
@@ -77,7 +93,7 @@ Important: Always use the current date and time information provided above for c
                 connection_params=StdioConnectionParams(
                     server_params=StdioServerParameters(
                         command="uv",
-                        args=["run", "npx", "@cocal/google-calendar-mcp"],
+                        args=["run", "npx", "-y", "@nihaal084/google-calendar-mcp"],
                         env=calendar_env,
                     ),
                     timeout=60.0,

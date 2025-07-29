@@ -113,7 +113,6 @@ venv.bak/
 # User-specific files (but allow templates)
 user_data/.env.*
 !user_data/.env.template
-user_data/credentials/*
 
 # Spyder project settings
 .spyderproject
@@ -169,6 +168,7 @@ test-outputs/
 
 # User-specific data and credentials
 user_data/.env.*
-user_data/credentials/
+user_data/credentials/credentials_*.json
 user_data/oauth_credentials/
 user_data/gmail_credentials/credentials_*.json
+user_data/calendar_credentials/credentials_*.json

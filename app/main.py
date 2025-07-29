@@ -357,20 +357,50 @@ async def register_user(request: UserRegistrationRequest):
         gmail_result = user_env_fresh.setup_gmail_authentication()
         print(f"Debug: Gmail result: {gmail_result}")
         
-        if gmail_result["success"]:
-            print(f"Gmail authentication setup successful for user {user_id}")
+        # Set up Calendar authentication automatically
+        print(f"Setting up Calendar authentication for user {user_id}...")
+        calendar_result = user_env_fresh.setup_calendar_authentication()
+        print(f"Debug: Calendar result: {calendar_result}")
+        
+        # Determine overall success
+        gmail_success = gmail_result["success"]
+        calendar_success = calendar_result["success"]
+        
+        if gmail_success and calendar_success:
+            print(f"Gmail and Calendar authentication setup successful for user {user_id}")
             return {
                 "success": True,
-                "message": f"User {user_id} registered successfully with Gmail authentication configured",
-                "gmail_setup": True
+                "message": f"User {user_id} registered successfully with Gmail and Calendar authentication configured",
+                "gmail_setup": True,
+                "calendar_setup": True
+            }
+        elif gmail_success:
+            print(f"Gmail authentication setup successful but Calendar setup failed for user {user_id}: {calendar_result['message']}")
+            return {
+                "success": True,
+                "message": f"User {user_id} registered successfully with Gmail authentication configured. Calendar setup failed: {calendar_result['message']}",
+                "gmail_setup": True,
+                "calendar_setup": False,
+                "calendar_error": calendar_result["message"]
+            }
+        elif calendar_success:
+            print(f"Calendar authentication setup successful but Gmail setup failed for user {user_id}: {gmail_result['message']}")
+            return {
+                "success": True,
+                "message": f"User {user_id} registered successfully with Calendar authentication configured. Gmail setup failed: {gmail_result['message']}",
+                "gmail_setup": False,
+                "calendar_setup": True,
+                "gmail_error": gmail_result["message"]
             }
         else:
-            print(f"Gmail authentication setup failed for user {user_id}: {gmail_result['message']}")
+            print(f"Both Gmail and Calendar authentication setup failed for user {user_id}")
             return {
                 "success": True,
-                "message": f"User {user_id} registered successfully, but Gmail authentication setup failed: {gmail_result['message']}",
+                "message": f"User {user_id} registered successfully, but both Gmail and Calendar authentication setup failed",
                 "gmail_setup": False,
-                "gmail_error": gmail_result["message"]
+                "calendar_setup": False,
+                "gmail_error": gmail_result["message"],
+                "calendar_error": calendar_result["message"]
             }
         
     except Exception as e:
@@ -459,6 +489,47 @@ async def setup_gmail_auth(request: Dict[str, str]):
             "success": False,
             "message": "Error setting up Gmail authentication. Please try again."
         }
+
+
+@app.post("/setup-calendar-auth")
+async def setup_calendar_auth(request: Dict[str, str]):
+    """Set up Calendar authentication for an existing user"""
+    try:
+        user_id = request.get("user_id", "").lower().strip()
+        
+        if not user_id:
+            return {
+                "success": False,
+                "message": "User ID is required"
+            }
+        
+        # Check if user exists
+        if not UserEnvironmentManager.check_user_exists(user_id):
+            return {
+                "success": False,
+                "message": "User not found"
+            }
+        
+        user_env = UserEnvironmentManager(user_id)
+        
+        # Set up Calendar authentication
+        print(f"Setting up Calendar authentication for user {user_id}...")
+        calendar_result = user_env.setup_calendar_authentication()
+        
+        return {
+            "success": calendar_result["success"],
+            "message": calendar_result["message"]
+        }
+        
+    except Exception as e:
+        print(f"Error setting up Calendar authentication: {e}")
+        return {
+            "success": False,
+            "message": "Error setting up Calendar authentication. Please try again."
+        }
+
+
+# Health check endpoint
 
 
 @app.post("/upload-credentials")
