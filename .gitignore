@@ -166,3 +166,9 @@ logs/
 # Test results
 test-results/
 test-outputs/
+
+# User-specific data and credentials
+user_data/.env.*
+user_data/credentials/
+user_data/oauth_credentials/
+user_data/gmail_credentials/credentials_*.json

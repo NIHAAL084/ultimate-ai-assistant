@@ -7,7 +7,7 @@ import warnings
 import uuid
 import shutil
 from pathlib import Path
-from typing import AsyncIterable
+from typing import AsyncIterable, Dict
 
 from dotenv import load_dotenv
 
@@ -343,10 +343,35 @@ async def register_user(request: UserRegistrationRequest):
         user_env = UserEnvironmentManager(user_id)
         user_env.create_user_env_file(request.todoist_api_token, credentials_path)
         
-        return {
-            "success": True,
-            "message": f"User {user_id} registered successfully"
-        }
+        # Create a fresh UserEnvironmentManager instance to ensure environment is loaded
+        user_env_fresh = UserEnvironmentManager(user_id)
+        
+        # Set up Gmail authentication automatically
+        print(f"Setting up Gmail authentication for user {user_id}...")
+        
+        # Debug: Check environment variables
+        print(f"Debug: Checking OAuth credentials for user {user_id}")
+        oauth_creds = user_env_fresh.get_env_var("GOOGLE_OAUTH_CREDENTIALS")
+        print(f"Debug: OAuth credentials found: {oauth_creds}")
+        
+        gmail_result = user_env_fresh.setup_gmail_authentication()
+        print(f"Debug: Gmail result: {gmail_result}")
+        
+        if gmail_result["success"]:
+            print(f"Gmail authentication setup successful for user {user_id}")
+            return {
+                "success": True,
+                "message": f"User {user_id} registered successfully with Gmail authentication configured",
+                "gmail_setup": True
+            }
+        else:
+            print(f"Gmail authentication setup failed for user {user_id}: {gmail_result['message']}")
+            return {
+                "success": True,
+                "message": f"User {user_id} registered successfully, but Gmail authentication setup failed: {gmail_result['message']}",
+                "gmail_setup": False,
+                "gmail_error": gmail_result["message"]
+            }
         
     except Exception as e:
         print(f"Error registering user: {e}")
@@ -395,6 +420,44 @@ async def update_user(request: UserUpdateRequest):
         return {
             "success": False,
             "message": "Error updating user. Please try again."
+        }
+
+
+@app.post("/setup-gmail-auth")
+async def setup_gmail_auth(request: Dict[str, str]):
+    """Set up Gmail authentication for an existing user"""
+    try:
+        user_id = request.get("user_id", "").lower().strip()
+        
+        if not user_id:
+            return {
+                "success": False,
+                "message": "User ID is required"
+            }
+        
+        # Check if user exists
+        if not UserEnvironmentManager.check_user_exists(user_id):
+            return {
+                "success": False,
+                "message": "User not found"
+            }
+        
+        user_env = UserEnvironmentManager(user_id)
+        
+        # Set up Gmail authentication
+        print(f"Setting up Gmail authentication for user {user_id}...")
+        gmail_result = user_env.setup_gmail_authentication()
+        
+        return {
+            "success": gmail_result["success"],
+            "message": gmail_result["message"]
+        }
+        
+    except Exception as e:
+        print(f"Error setting up Gmail authentication: {e}")
+        return {
+            "success": False,
+            "message": "Error setting up Gmail authentication. Please try again."
         }
 
 

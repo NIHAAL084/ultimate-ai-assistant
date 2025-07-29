@@ -3,7 +3,7 @@ from google.adk.tools import google_search, load_memory
 from google.adk.tools.agent_tool import AgentTool
 from .tools import process_document_tool, register_uploaded_files_tool, list_available_user_files_tool
 from .prompt import PRIMARY_ASSISTANT_PROMPT
-from .sub_agents import create_calendar_agent, create_task_management_agent
+from .sub_agents import create_calendar_agent, create_task_management_agent, create_gmail_agent
 from datetime import datetime
 
 
@@ -28,6 +28,9 @@ Important: Always use the current date and time information provided above for c
     task_management_agent = create_task_management_agent(user_id=user_id)  
     task_management_tool = AgentTool(agent=task_management_agent)
     
+    gmail_agent = create_gmail_agent(user_id=user_id)
+    gmail_tool = AgentTool(agent=gmail_agent)
+    
     return Agent(
         name="assistant",
         model="gemini-2.0-flash-exp",
@@ -40,6 +43,7 @@ Important: Always use the current date and time information provided above for c
             register_uploaded_files_tool,
             list_available_user_files_tool,
             calendar_tool,
-            task_management_tool
+            task_management_tool,
+            gmail_tool
         ],
     )

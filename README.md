@@ -53,6 +53,7 @@ The primary agent has access to these specialized tools:
 
 - **`calendar_tool`**: AgentTool wrapper around Calendar Agent (connects to Google Calendar MCP server)
 - **`task_management_tool`**: AgentTool wrapper around Task Management Agent (connects to Todoist MCP server)
+- **`gmail_tool`**: AgentTool wrapper around Gmail Agent (connects to Gmail MCP server)
 
 #### **Tool Orchestration**
 
@@ -61,6 +62,7 @@ The primary agent intelligently decides which tools to use based on user request
 - **Memory queries** → `load_memory` tool automatically searches past conversations
 - **Calendar requests** → `calendar_tool` agent handles Google Calendar operations
 - **Task management** → `task_management_tool` agent handles Todoist operations
+- **Email management** → `gmail_tool` agent handles Gmail operations
 - **Document questions** → `process_document_tool` analyzes uploaded files
 - **Current information** → `google_search` provides real-time web results
 
@@ -93,6 +95,20 @@ ZORA implements an **Agent-as-Tool** architecture where specialized sub-agents a
   - Completion tracking and progress monitoring
   - Search and filtering across all tasks
 
+#### **Gmail Agent** (Gmail)
+
+- **MCP Server**: `@gongrzhe/server-gmail-autoauth-mcp` - Advanced Gmail MCP server with auto-authentication
+- **Agent-as-Tool Integration**: Wrapped as specialized email management tool within primary agent
+- **User-Specific Configuration**: Uses Google OAuth credentials (same as Calendar agent)
+- **Capabilities**:
+  - **Email Management**: Send, draft, read, search, and delete emails
+  - **Attachment Support**: Send and download file attachments with proper handling
+  - **Advanced Search**: Gmail search syntax with filters (sender, date, keywords, attachments)
+  - **Label Management**: Create, update, delete labels; organize emails efficiently
+  - **Batch Operations**: Process multiple emails simultaneously for efficiency
+  - **Format Support**: Plain text, HTML, and multipart emails
+  - **Natural Language**: *"Send John the project report with budget spreadsheet attached"*
+
 #### **Technical Implementation**
 
 ```python
@@ -103,6 +119,9 @@ calendar_tool = AgentTool(agent=calendar_agent)
 task_management_agent = create_task_management_agent(user_id=user_id)  
 task_management_tool = AgentTool(agent=task_management_agent)
 
+gmail_agent = create_gmail_agent(user_id=user_id)
+gmail_tool = AgentTool(agent=gmail_agent)
+
 # Sub-agents included in primary agent's toolset
 return Agent(
     name="assistant",
@@ -111,7 +130,8 @@ return Agent(
         load_memory,
         process_document_tool,
         calendar_tool,        # Calendar agent as tool
-        task_management_tool  # Task agent as tool
+        task_management_tool, # Task agent as tool
+        gmail_tool           # Gmail agent as tool
     ]
 )
 ```
@@ -261,6 +281,21 @@ ZORA: [Speaking] "I've scheduled your dentist appointment for Tuesday,
       January 30th at 3:00 PM. Would you like me to set a reminder?"
 ```
 
+#### **Email Management**
+
+```conversation
+You: "Send an email to sarah@company.com about the project deadline extension"
+ZORA: "I'll help you send that email. What would you like to say about the deadline extension?"
+
+You: "Tell her we need 2 more weeks due to additional requirements"
+ZORA: "Email sent to sarah@company.com with subject 'Project Deadline Extension Request' 
+      explaining the need for 2 additional weeks due to new requirements."
+
+You: "Check if I have any emails about the quarterly budget from last week"
+ZORA: "I found 3 emails about the quarterly budget from last week. The most recent 
+      is from your manager with the final budget approval and a spreadsheet attachment."
+```
+
 #### **Memory and Context**
 
 ```conversation
@@ -273,9 +308,9 @@ ZORA: "Of course! I remember you're working on an image classification
       machine learning project. What specific aspect would you like help with?"
 ```
 
-## 🛠️ Advanced Setup: Calendar & Tasks
+## 🛠️ Advanced Setup: Calendar, Tasks & Email
 
-For full productivity features, set up ZORA to manage your actual calendar and tasks:
+For full productivity features, set up ZORA to manage your actual calendar, tasks, and email:
 
 ### Prerequisites for Advanced Features
 
@@ -283,6 +318,10 @@ For full productivity features, set up ZORA to manage your actual calendar and t
 # Install Node.js MCP servers (one-time setup)
 npm install -g @cocal/google-calendar-mcp
 npm install -g @nihaal084/todoist-mcp-server
+npm install -g @gongrzhe/server-gmail-autoauth-mcp
+
+# Note: If you get permission errors, you may need to use sudo:
+# sudo npm install -g @gongrzhe/server-gmail-autoauth-mcp
 ```
 
 ### Setting Up Google Calendar Integration
@@ -301,22 +340,37 @@ npm install -g @nihaal084/todoist-mcp-server
    - Go to [Todoist](https://todoist.com/) → Settings → Integrations
    - Copy your API token
 
-4. **Register with ZORA**:
+4. **Set Up Gmail** (Uses same Google OAuth as Calendar):
+   - Gmail integration automatically uses your Google OAuth credentials
+   - Enable Gmail API in your Google Cloud Console (same project as Calendar)
+   - First Gmail authentication will be handled automatically by the MCP server
+
+5. **Register with ZORA**:
    - On ZORA's homepage, click "Register New User"
    - Enter a username (letters, numbers, hyphens only)
-   - Upload your Google OAuth JSON file
+   - Upload your Google OAuth JSON file (enables both Calendar and Gmail)
    - Enter your Todoist API token
    - Click "Register"
 
 ### Advanced Voice Commands (After Setup)
 
 ```voice
+# Calendar Commands
 "What's on my calendar tomorrow?"
 "Schedule a team meeting for Friday at 2 PM"
 "Move my 3 PM meeting to 4 PM"
+
+# Task Management Commands
 "Add a high-priority task to review the quarterly report"
 "Show me all tasks due this week"
 "Mark the grocery shopping task as complete"
+
+# Email Commands
+"Send an email to john@company.com about the project update"
+"Read my latest emails from my manager"
+"Search for emails about the quarterly budget from last week"
+"Send the project report to the team with the budget spreadsheet attached"
+"Check if I have any unread emails with attachments"
 ```
 
 ## 🔧 Technical Architecture
@@ -338,10 +392,13 @@ Primary Agent (Gemini 2.0 Flash)
 ├── load_memory tool (searches Zep knowledge graph)
 ├── process_document_tool 
 ├── AgentTool(calendar_agent)     # Calendar sub-agent as tool
-└── AgentTool(task_agent)         # Task sub-agent as tool
+├── AgentTool(task_agent)         # Task sub-agent as tool
+└── AgentTool(gmail_agent)        # Gmail sub-agent as tool
 
 # Sub-Agent MCP Connections
 Calendar Agent → MCPToolset → @cocal/google-calendar-mcp server
+Task Agent → MCPToolset → @nihaal084/todoist-mcp-server
+Gmail Agent → MCPToolset → @gongrzhe/server-gmail-autoauth-mcp server
 Task Agent → MCPToolset → @nihaal084/todoist-mcp-server
 ```
 
@@ -369,6 +426,21 @@ MCPToolset(
             command="uv", 
             args=["run", "npx", "-y", "@nihaal084/todoist-mcp-server"],
             env={"TODOIST_API_TOKEN": user_token},
+        ),
+        timeout=60.0,
+    )
+)
+
+# Gmail Agent MCP Configuration
+MCPToolset(
+    connection_params=StdioConnectionParams(
+        server_params=StdioServerParameters(
+            command="uv",
+            args=["run", "npx", "@gongrzhe/server-gmail-autoauth-mcp"],
+            env={
+                "GMAIL_OAUTH_PATH": user_oauth_path,
+                "GMAIL_CREDENTIALS_PATH": user_credentials_path
+            },
         ),
         timeout=60.0,
     )
@@ -453,7 +525,8 @@ ultimate-ai-assistant/
 │       │
 │       ├── sub_agents/          # Specialized external service agents
 │       │   ├── calendar_agent/          # Google Calendar MCP integration
-│       │   └── task_management_agent/   # Todoist MCP integration
+│       │   ├── task_management_agent/   # Todoist MCP integration
+│       │   └── gmail_agent/             # Gmail MCP integration
 │       │
 │       └── utils/               # Core utilities
 │           ├── zep_memory_service.py     # Persistent memory integration

@@ -7,6 +7,8 @@ with their specific API keys and configurations.
 """
 
 import os
+import subprocess
+import shutil
 from pathlib import Path
 from typing import Dict, Optional, Union, List
 import logging
@@ -183,6 +185,103 @@ TODOIST_API_TOKEN={todoist_token}
             f.writelines(env_lines)
         
         logger.info(f"Updated {key} in user environment file")
+
+    def setup_gmail_authentication(self) -> Dict[str, Union[bool, str]]:
+        """Set up Gmail authentication for this user"""
+        import subprocess
+        import shutil
+        import tempfile
+        
+        try:
+            # Get OAuth credentials path
+            oauth_credentials = self.get_env_var("GOOGLE_OAUTH_CREDENTIALS")
+            if not oauth_credentials:
+                return {
+                    "success": False,
+                    "message": "Google OAuth credentials not found for user"
+                }
+            
+            # Resolve relative path to absolute
+            if not os.path.isabs(oauth_credentials):
+                oauth_credentials = os.path.join(self.base_dir, oauth_credentials)
+            
+            if not os.path.exists(oauth_credentials):
+                return {
+                    "success": False,
+                    "message": "OAuth credentials file not found"
+                }
+            
+            # Create Gmail MCP directory
+            gmail_mcp_dir = Path.home() / ".gmail-mcp"
+            gmail_mcp_dir.mkdir(exist_ok=True)
+            
+            # Copy OAuth credentials to Gmail MCP directory as gcp-oauth.keys.json
+            gcp_oauth_keys_path = gmail_mcp_dir / "gcp-oauth.keys.json"
+            shutil.copy2(oauth_credentials, gcp_oauth_keys_path)
+            
+            # Run Gmail authentication
+            auth_process = subprocess.run(
+                ["npx", "@gongrzhe/server-gmail-autoauth-mcp", "auth"],
+                cwd=str(gmail_mcp_dir),
+                capture_output=True,
+                text=True,
+                timeout=120  # 2 minute timeout
+            )
+            
+            if auth_process.returncode != 0:
+                return {
+                    "success": False,
+                    "message": f"Gmail authentication failed: {auth_process.stderr}"
+                }
+            
+            # Check if credentials.json was generated
+            global_credentials_path = gmail_mcp_dir / "credentials.json"
+            if not global_credentials_path.exists():
+                return {
+                    "success": False,
+                    "message": "Gmail credentials were not generated"
+                }
+            
+            # Create user-specific gmail_credentials directory
+            gmail_credentials_dir = self.env_dir / "gmail_credentials"
+            gmail_credentials_dir.mkdir(exist_ok=True)
+            
+            # Move credentials to user-specific location
+            user_credentials_path = gmail_credentials_dir / f"credentials_{self.user_id}.json"
+            shutil.move(str(global_credentials_path), str(user_credentials_path))
+            
+            # Clean up global Gmail MCP directory for next user
+            try:
+                # Remove the OAuth keys file
+                if gcp_oauth_keys_path.exists():
+                    gcp_oauth_keys_path.unlink()
+                    
+                # Remove the .gmail-mcp directory if it's empty
+                if gmail_mcp_dir.exists() and not any(gmail_mcp_dir.iterdir()):
+                    gmail_mcp_dir.rmdir()
+                    
+                print(f"Cleaned up global Gmail MCP directory for user {self.user_id}")
+            except Exception as cleanup_error:
+                # Don't fail the whole process if cleanup fails, just log it
+                logger.warning(f"Failed to clean up Gmail MCP directory: {cleanup_error}")
+            
+            return {
+                "success": True,
+                "message": "Gmail authentication completed successfully",
+                "credentials_path": str(user_credentials_path)
+            }
+            
+        except subprocess.TimeoutExpired:
+            return {
+                "success": False,
+                "message": "Gmail authentication timed out. Please try again."
+            }
+        except Exception as e:
+            logger.error(f"Error setting up Gmail authentication for user {self.user_id}: {e}")
+            return {
+                "success": False,
+                "message": f"Error setting up Gmail authentication: {str(e)}"
+            }
 
 
 def get_user_env_var(key: str, default: Optional[str] = None, user_id: Optional[str] = None) -> Optional[str]:
