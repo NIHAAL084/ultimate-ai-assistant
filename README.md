@@ -17,15 +17,15 @@ Unlike simple chatbots, ZORA is designed as a **complete AI companion** that:
 
 ## 🛠️ Why MCP Servers Had To Be Modified
 
-### Google Calendar MCP (`@nihaal084/google-calendar-mcp`)
+### Google Calendar MCP (original: `@cocal/google-calendar-mcp`, now: `@nihaal084/google-calendar-mcp`)
 
-The original Google Calendar MCP server did **not** support user-specific token file paths. This meant that all users would share the same token file, making true multi-user support impossible and creating security risks. The modified version adds support for the `GOOGLE_CALENDAR_MCP_TOKEN_PATH` environment variable, so each user's tokens are stored in their own file (e.g., `calendar_credentials/credentials_{user_id}.json`).
+The original Google Calendar MCP server (`@cocal/google-calendar-mcp`) did **not** support user-specific token file paths. This meant that all users would share the same token file, making true multi-user support impossible and creating security risks. The modified version (`@nihaal084/google-calendar-mcp`) adds support for the `GOOGLE_CALENDAR_MCP_TOKEN_PATH` environment variable, so each user's tokens are stored in their own file (e.g., `calendar_credentials/credentials_{user_id}.json`).
 
-### Todoist MCP (`@nihaal084/todoist-mcp-server`)
+### Todoist MCP (original: `@cocal/todoist-mcp-server`, now: `@nihaal084/todoist-mcp-server`)
 
-The original Todoist MCP server was **not fully compatible with Google ADK** due to stricter input/output validation requirements. For example, it used integers (e.g., `priority: 4`) where ADK expects strings (e.g., `priority: "4"`). This mismatch caused runtime errors under ADK’s strict schema enforcement.
+The original Todoist MCP server (`@cocal/todoist-mcp-server`) was **not fully compatible with Google ADK** due to stricter input/output validation requirements. For example, it used integers (e.g., `priority: 4`) where ADK expects strings (e.g., `priority: "4"`). This mismatch caused runtime errors under ADK’s strict schema enforcement.
 
-The updated server addresses these issues and improves overall robustness with:
+The updated server (`@nihaal084/todoist-mcp-server`) addresses these issues and improves overall robustness with:
 
 - **ADK-compatible schema formatting**  
   Converts integer fields (e.g., `priority`) to strings to satisfy ADK’s validation.
@@ -162,6 +162,24 @@ Each sub-agent runs its own MCP server process with user-specific environment va
 
 ### 🧠 **Memory System**
 
+#### **About the Zep Memory Service Integration**
+
+The core of ZORA's persistent memory is a custom `ZepMemoryService` for ADK, which is based on the excellent open-source example by Ivan Nardini. **Note:** The original example was written for `google-adk==0.4.0`, while ZORA uses the latest `google-adk==1.8.0`—so significant updates were required for compatibility:
+
+- [LinkedIn post: Google ADK + Zep long-term memory](https://www.linkedin.com/posts/ivan-nardini_google-agentdevelopmentkit-adk-activity-7325263448001376256-kLZR/?utm_source=chatgpt.com)
+- [Original notebook: agent-samples/samples/adk_memory_zep.ipynb](https://github.com/inardini/agent-samples/blob/main/samples/adk_memory_zep.ipynb)
+
+**What we changed and why:**
+
+- **Async support:** Refactored the service to use async methods for compatibility with ZORA's async FastAPI backend and ADK event loop.
+- **Error handling and logging:** Improved error reporting, debug output, and resilience to network/service issues.
+- **Session auto-save:** Added a `SessionMemoryManager` utility to automatically save sessions to Zep memory only when meaningful user interaction occurs.
+- **Metadata and traceability:** Enhanced metadata for each memory entry to improve traceability and debugging.
+- **User creation logic:** Hardened user creation and existence checks for robust multi-user support.
+- **Generalization:** Adapted the code for production use in a multi-user, multi-session environment, not just a single notebook demo.
+
+These changes ensure that ZORA's memory is reliable, scalable, and robust for real-world, multi-user deployments, while building on the best practices and patterns from the original ADK+Zep integration example.
+
 ZORA uses Zep Cloud's advanced memory service with knowledge graph technology for persistent conversation memory:
 
 #### **How Memory Works**
@@ -250,6 +268,8 @@ cp .env.example .env
 # Edit .env and add your keys:
 GOOGLE_API_KEY=AIza_your_actual_google_key_here
 ZEP_API_KEY=your_actual_zep_key_here
+
+> **Note:** You no longer need to manually generate or upload separate token files for Google Calendar or Gmail. Simply uploading your Google OAuth credentials JSON file during registration or update will automatically authenticate and generate the required tokens for both Calendar and Gmail integrations.
 ```
 
 ### 4. Launch ZORA
@@ -264,6 +284,21 @@ http://localhost:8001
 
 **That's it!** You should see ZORA's interface. Try typing a message or clicking the microphone to start talking.
 
+<p align="center">
+  <img src="screenshots/login_screen.png" alt="Login Screen" width="400"/>
+  <br><em>Login screen</em>
+</p>
+
+<p align="center">
+  <img src="screenshots/user_registration_screen.png" alt="User Registration Screen" width="400"/>
+  <br><em>User registration screen</em>
+</p>
+
+<p align="center">
+  <img src="screenshots/update_credentials_screen.png" alt="Update Credentials Screen" width="400"/>
+  <br><em>Update credentials screen</em>
+</p>
+
 ## 📖 How to Use ZORA
 
 ### Basic Conversation
@@ -272,6 +307,11 @@ http://localhost:8001
 2. **Voice**: Click the microphone button and speak naturally
 3. **Files**: Drag and drop documents or images for analysis
 4. **Memory**: Reference previous conversations - ZORA remembers everything
+
+<p align="center">
+  <img src="screenshots/chat_interface_screen.png" alt="Chat Interface" width="600"/>
+  <br><em>Main chat interface</em>
+</p>
 
 ### Example Interactions
 
@@ -370,7 +410,7 @@ npm install -g @gongrzhe/server-gmail-autoauth-mcp
 5. **Register with ZORA**:
    - On ZORA's homepage, click "Register New User"
    - Enter a username (letters, numbers, hyphens only)
-   - Upload your Google OAuth JSON file (enables both Calendar and Gmail)
+   - Upload your Google OAuth JSON file (this will automatically authenticate and generate tokens for both Calendar and Gmail)
    - Enter your Todoist API token
    - Click "Register"
 
@@ -656,6 +696,12 @@ python manage_users.py validate --user username
 
 # Switch between users (for testing)
 python manage_users.py switch --user username
+
+---
+
+## 🆕 Recent Improvements
+
+- **Simplified Google Authentication:** Now, uploading your Google OAuth credentials JSON file (either at registration or via the update credentials screen) will automatically handle authentication and generate the required tokens for both Google Calendar and Gmail. No manual token management is needed—ZORA takes care of it for you!
 ```
 
 ### User Environment Structure
@@ -831,13 +877,22 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🙏 Acknowledgments
 
-- **Google ADK Team**: For the excellent Agent Development Kit
-- **Zep.ai**: For the powerful memory service
-- **MCP Server Authors**: For calendar and task management integrations
-  - `@nihaal084/google-calendar-mcp`: Custom fork with user-specific token path support
-  - `@nihaal084/todoist-mcp-server`: Custom Gemini-compatible Todoist integration
-  - `@gongrzhe/server-gmail-autoauth-mcp`: Gmail MCP server with auto-authentication
-- **Open Source Community**: For the tools and libraries that make this possible
+- **Google ADK Team** – For developing and maintaining the Agent Development Kit that powers our agentic workflows.
+- **Zep.ai** – For the open-source memory service that enables persistent, production-ready memory for agents.
+- **MCP Server Authors** – For their community-built integrations which served as the foundation for custom adaptations:
+  - [`@cocal/google-calendar-mcp`](https://www.npmjs.com/package/@cocal/google-calendar-mcp) – Original Google Calendar MCP server (multi-user fork basis)
+  - [`@cocal/todoist-mcp-server`](https://www.npmjs.com/package/@cocal/todoist-mcp-server) – Original Todoist MCP server (basis for ADK-compatible fork)
+  - [`@gongrzhe/server-gmail-autoauth-mcp`](https://www.npmjs.com/package/@gongrzhe/server-gmail-autoauth-mcp) – Gmail MCP server with auto-authentication
+
+- **Custom Forks by Nihaal Anupoju**:
+  - [`@nihaal084/google-calendar-mcp`](https://www.npmjs.com/package/@nihaal084/google-calendar-mcp) – Custom fork with user-specific token path support
+  - [`@nihaal084/todoist-mcp-server`](https://www.npmjs.com/package/@nihaal084/todoist-mcp-server) – Updated fork with strict ADK schema compliance
+
+- **[@bhancockio](https://github.com/bhancockio)** – For his excellent Google ADK videos, code, and walkthroughs that significantly accelerated the development process.
+
+- **[Ivan Nardini](https://www.linkedin.com/in/ivan-nardini/)** – For his original [ADK + Zep memory integration example](https://github.com/inardini/agent-samples/blob/main/samples/adk_memory_zep.ipynb) ([LinkedIn Post](https://www.linkedin.com/posts/ivan-nardini_google-agentdevelopmentkit-adk-activity-7325263448001376256-kLZR)) which inspired our persistent memory system in ZORA (adapted for `google-adk@1.8.0`).
+
+- **Open Source Community** – For the tools, libraries, feedback, and inspiration that made modular agent development with ADK possible.
 
 ---
 
