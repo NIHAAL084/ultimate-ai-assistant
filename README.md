@@ -285,17 +285,17 @@ http://localhost:8001
 **That's it!** You should see ZORA's interface. Try typing a message or clicking the microphone to start talking.
 
 <p align="center">
-  <img src="screenshots/login_screen.png" alt="Login Screen" width="400"/>
+  <img src="screenshots/login_screen.png" alt="Login Screen" style="max-width: 90vw; width: 900px; min-width: 300px;"/>
   <br><em>Login screen</em>
 </p>
 
 <p align="center">
-  <img src="screenshots/user_registration_screen.png" alt="User Registration Screen" width="400"/>
+  <img src="screenshots/user_registration_screen.png" alt="User Registration Screen" style="max-width: 90vw; width: 900px; min-width: 300px;"/>
   <br><em>User registration screen</em>
 </p>
 
 <p align="center">
-  <img src="screenshots/update_credentials_screen.png" alt="Update Credentials Screen" width="400"/>
+  <img src="screenshots/update_credentials_screen.png" alt="Update Credentials Screen" style="max-width: 90vw; width: 900px; min-width: 300px;"/>
   <br><em>Update credentials screen</em>
 </p>
 
@@ -309,7 +309,7 @@ http://localhost:8001
 4. **Memory**: Reference previous conversations - ZORA remembers everything
 
 <p align="center">
-  <img src="screenshots/chat_interface_screen.png" alt="Chat Interface" width="600"/>
+  <img src="screenshots/chat_interface_screen.png" alt="Chat Interface" style="max-width: 95vw; width: 1200px; min-width: 400px;"/>
   <br><em>Main chat interface</em>
 </p>
 
