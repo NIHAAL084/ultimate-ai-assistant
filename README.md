@@ -21,9 +21,9 @@ Unlike simple chatbots, ZORA is designed as a **complete AI companion** that:
 
 The original Google Calendar MCP server (`@cocal/google-calendar-mcp`) did **not** support user-specific token file paths. This meant that all users would share the same token file, making true multi-user support impossible and creating security risks. The modified version (`@nihaal084/google-calendar-mcp`) adds support for the `GOOGLE_CALENDAR_MCP_TOKEN_PATH` environment variable, so each user's tokens are stored in their own file (e.g., `calendar_credentials/credentials_{user_id}.json`).
 
-### Todoist MCP (original: `@cocal/todoist-mcp-server`, now: `@nihaal084/todoist-mcp-server`)
+### Todoist MCP (original: `@abhiz123/todoist-mcp-server`, now: `@nihaal084/todoist-mcp-server`)
 
-The original Todoist MCP server (`@cocal/todoist-mcp-server`) was **not fully compatible with Google ADK** due to stricter input/output validation requirements. For example, it used integers (e.g., `priority: 4`) where ADK expects strings (e.g., `priority: "4"`). This mismatch caused runtime errors under ADK’s strict schema enforcement.
+The original Todoist MCP server (`@abhiz123/todoist-mcp-server`) was **not fully compatible with Google ADK** due to stricter input/output validation requirements. For example, it used integers (e.g., `priority: 4`) where ADK expects strings (e.g., `priority: "4"`). This mismatch caused runtime errors under ADK’s strict schema enforcement.
 
 The updated server (`@nihaal084/todoist-mcp-server`) addresses these issues and improves overall robustness with:
 
@@ -458,10 +458,9 @@ Primary Agent (Gemini 2.0 Flash)
 └── AgentTool(gmail_agent)        # Gmail sub-agent as tool
 
 # Sub-Agent MCP Connections
-Calendar Agent → MCPToolset → @cocal/google-calendar-mcp server
+Calendar Agent → MCPToolset → @nihaal084/google-calendar-mcp server
 Task Agent → MCPToolset → @nihaal084/todoist-mcp-server
 Gmail Agent → MCPToolset → @gongrzhe/server-gmail-autoauth-mcp server
-Task Agent → MCPToolset → @nihaal084/todoist-mcp-server
 ```
 
 ### MCP Server Implementation
@@ -881,7 +880,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Zep.ai** – For the open-source memory service that enables persistent, production-ready memory for agents.
 - **MCP Server Authors** – For their community-built integrations which served as the foundation for custom adaptations:
   - [`@cocal/google-calendar-mcp`](https://www.npmjs.com/package/@cocal/google-calendar-mcp) – Original Google Calendar MCP server (multi-user fork basis)
-  - [`@cocal/todoist-mcp-server`](https://www.npmjs.com/package/@cocal/todoist-mcp-server) – Original Todoist MCP server (basis for ADK-compatible fork)
+  - [`@abhiz123/todoist-mcp-server`](https://www.npmjs.com/package/@abhiz123/todoist-mcp-server) – Original Todoist MCP server (basis for ADK-compatible fork)
   - [`@gongrzhe/server-gmail-autoauth-mcp`](https://www.npmjs.com/package/@gongrzhe/server-gmail-autoauth-mcp) – Gmail MCP server with auto-authentication
 
 - **Custom Forks by Nihaal Anupoju**:
