@@ -33,7 +33,7 @@ Important: Always use the current date and time information provided above for c
     
     return Agent(
         name="assistant",
-        model="gemini-2.0-flash-exp",
+        model="gemini-live-2.5-flash-preview",
         description="Agent to help with online search, document processing, image analysis, and remembering past conversations.",
         instruction=dynamic_prompt,
         tools=[

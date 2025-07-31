@@ -84,7 +84,7 @@ def create_gmail_agent(user_id: Optional[str] = None) -> Agent:
 Important: Always use the current date and time information provided above for context when working with emails. When users refer to relative dates like "today", "yesterday", "this week", calculate them based on the current date and time provided."""
 
     return Agent(
-        model="gemini-2.0-flash",
+        model="gemini-2.5-flash-lite",
         name="Gmail_Agent",
         instruction=dynamic_prompt,
         tools=[
