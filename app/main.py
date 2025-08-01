@@ -149,7 +149,8 @@ async def agent_to_client_messaging(
 ):
     """Agent to client communication"""
     
-    # Buffer for accumulating audio input transcription
+    # Buffer for accumulating audio input transcription parts and full text
+    pending_user_parts: list[str] = []
     pending_user_text = ""
     while True:
         async for event in live_events:
@@ -188,14 +189,24 @@ async def agent_to_client_messaging(
 
             # Buffer any input audio transcription parts until sending as one message
             if event.content and getattr(event.content, 'role', None) == "user" and part.text:
+                # Collect each chunk for later removal from session
+                pending_user_parts.append(part.text)
                 pending_user_text += part.text
-                # Do not send fragmented transcripts
+                # Do not send fragmented transcripts to client
                 continue
 
             # Only send text if it's a partial model response (streaming)
             if event.content and getattr(event.content, 'role', None) != "user" and part.text and event.partial:
                 # If we have buffered user transcription, send it once before model response
                 if pending_user_text:
+                    # Remove partial transcription events from session
+                    session.events[:] = [e for e in session.events if not (
+                        e.author == "user" and e.content.parts and e.content.parts[0].text in pending_user_parts
+                    )]
+                    # Append single consolidated user event for memory
+                    full_content = types.Content(role="user", parts=[types.Part(text=pending_user_text)])
+                    session.events.append(Event(author="user", content=full_content))
+                    # Send consolidated transcription to client
                     user_msg = {
                         "mime_type": "text/plain",
                         "data": pending_user_text,
@@ -204,7 +215,9 @@ async def agent_to_client_messaging(
                     }
                     await websocket.send_text(json.dumps(user_msg))
                     print(f"[AGENT TO CLIENT]: buffered audio transcription: {pending_user_text}")
+                    # Reset buffers
                     pending_user_text = ""
+                    pending_user_parts.clear()
                 # Send model partial response
                 message = {
                     "mime_type": "text/plain",
