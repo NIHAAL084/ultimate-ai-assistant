@@ -15,7 +15,7 @@ from google.genai import types
 
 # Zep client library
 from zep_cloud.client import Zep
-from zep_cloud.types import Message
+from zep_cloud.types import Message, RoleType
 from zep_cloud.errors import NotFoundError, ConflictError
 
 
@@ -66,16 +66,16 @@ class ZepMemoryService(BaseMemoryService):
             except Exception as e:
                 print(f"💥 Error creating user '{user_id}' in Zep: {e}")
 
-    def _map_role(self, author: str) -> str:
+    def _map_role(self, author: str, user_id: str = None) -> RoleType:
         """
         Maps ADK author names (typically 'user' or the agent's name)
         to Zep's `RoleType` (e.g., 'user', 'assistant').
         """
         author_lower = author.lower()
         if author_lower == "user":
-            return "user"
+            return RoleType.USER  # Use Zep's user role type
         else:
-            return "assistant"
+            return RoleType.ASSISTANT  # Use Zep's assistant role type
 
     @override
     async def add_session_to_memory(self, session: Session) -> None:
@@ -104,7 +104,7 @@ class ZepMemoryService(BaseMemoryService):
             if not content: # Skip empty content
                 continue
 
-            role = self._map_role(event.author)
+            role = self._map_role(event.author, session.user_id)
             # Store ADK-specific IDs in Zep message metadata for traceability
             metadata = {
                 "adk_session_id": str(session.id),
@@ -112,6 +112,7 @@ class ZepMemoryService(BaseMemoryService):
                 "adk_invocation_id": str(event.invocation_id) if event.invocation_id else None,
                 "adk_branch": str(event.branch) if event.branch else None,
                 "adk_author": event.author,
+                "user_id": session.user_id,  # Store actual user ID in metadata
             }
 
             # Zep expects ISO format timestamps with timezone

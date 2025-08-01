@@ -2,6 +2,7 @@ from google.adk.agents import Agent
 from google.adk.tools import google_search, load_memory
 from google.adk.tools.agent_tool import AgentTool
 from .tools import process_document_tool, register_uploaded_files_tool, list_available_user_files_tool
+from .tools.a2a_tools import list_available_agents, send_message_to_agent, get_agent_capabilities, discover_new_agents
 from .prompt import PRIMARY_ASSISTANT_PROMPT
 from .sub_agents import create_calendar_agent, create_task_management_agent, create_gmail_agent
 from datetime import datetime
@@ -44,6 +45,11 @@ Important: Always use the current date and time information provided above for c
             list_available_user_files_tool,
             calendar_tool,
             task_management_tool,
-            gmail_tool
+            gmail_tool,
+            # A2A client tools for communicating with other agents
+            list_available_agents,
+            send_message_to_agent,
+            get_agent_capabilities,
+            discover_new_agents,
         ],
     )
