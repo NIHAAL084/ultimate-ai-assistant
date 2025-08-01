@@ -26,16 +26,17 @@ async function initializeSession(userId = null) {
     // Generate a new random session ID for each conversation
     sessionId = generateRandomSessionId();
     // Include user_id in the WebSocket URL if provided
-    const userParam = userId ? `&user_id=${encodeURIComponent(userId)}` : '';
-    ws_url = "ws://" + window.location.host + "/ws/" + sessionId + "?is_audio=false" + userParam;
+    // Server always uses AUDIO modality, no need for is_audio parameter
+    const userParam = userId ? `user_id=${encodeURIComponent(userId)}` : '';
+    ws_url = "ws://" + window.location.host + "/ws/" + sessionId + (userParam ? `?${userParam}` : '');
     console.log(`New session ID generated: ${sessionId}${userId ? ` for user: ${userId}` : ''}`);
     return true;
   } catch (error) {
     console.error('Failed to initialize session:', error);
     // Fallback to simpler random session ID
     sessionId = 'fallback_' + Math.random().toString().substring(2);
-    const userParam = userId ? `&user_id=${encodeURIComponent(userId)}` : '';
-    ws_url = "ws://" + window.location.host + "/ws/" + sessionId + "?is_audio=false" + userParam;
+    const userParam = userId ? `user_id=${encodeURIComponent(userId)}` : '';
+    ws_url = "ws://" + window.location.host + "/ws/" + sessionId + (userParam ? `?${userParam}` : '');
     return false;
   }
 }
@@ -209,17 +210,22 @@ function connectWebsocket() {
       return;
     }
 
-    // If it's audio, play it
+    // If it's audio, play it when audioPlayerNode is available
+    // Audio is always sent from server since we use AUDIO modality
     if (message_from_server.mime_type === "audio/pcm" && audioPlayerNode) {
-      audioPlayerNode.port.postMessage(base64ToArray(message_from_server.data));
+      try {
+        audioPlayerNode.port.postMessage(base64ToArray(message_from_server.data));
+        console.log(`[AUDIO] Playing audio: ${message_from_server.data.length} base64 chars`);
+      } catch (error) {
+        console.error("[AUDIO] Error playing audio:", error);
+      }
 
-      // If we have an existing message element for this turn, add audio icon if needed
+      // If we have an existing message element for this turn, add audio icon
       if (currentMessageId) {
         const messageElem = document.getElementById(currentMessageId);
         if (
           messageElem &&
-          !messageElem.querySelector(".audio-icon") &&
-          is_audio
+          !messageElem.querySelector(".audio-icon")
         ) {
           const audioIcon = document.createElement("span");
           audioIcon.className = "audio-icon";
@@ -234,13 +240,13 @@ function connectWebsocket() {
       typingIndicator.classList.remove("visible");
 
       const role = message_from_server.role || "model";
+      const isAudioInput = message_from_server.is_audio_input || false;
 
-      // If we already have a message element for this turn, append to it
+      // If we already have a message element for this turn, append to it (only for model responses)
       if (currentMessageId && role === "model") {
         const existingMessage = document.getElementById(currentMessageId);
         if (existingMessage) {
           // Append the text without adding extra spaces
-          // Use a span element to maintain proper text flow
           const textNode = document.createTextNode(message_from_server.data);
           existingMessage.appendChild(textNode);
 
@@ -250,23 +256,30 @@ function connectWebsocket() {
         }
       }
 
-      // Create a new message element if it's a new turn or user message
+      // Create a new message element
       const messageId = Math.random().toString(36).substring(7);
       const messageElem = document.createElement("p");
       messageElem.id = messageId;
 
-      // Set class based on role
-      messageElem.className =
-        role === "user" ? "user-message" : "agent-message";
+      // Set class based on role - same styling for text and audio input
+      messageElem.className = role === "user" ? "user-message" : "agent-message";
+
+      // Add mic icon for audio input messages
+      if (isAudioInput && role === "user") {
+        const micIcon = document.createElement("i");
+        micIcon.className = "fas fa-microphone";
+        micIcon.style.marginRight = "8px";
+        micIcon.style.fontSize = "14px";
+        micIcon.title = "Voice input";
+        messageElem.appendChild(micIcon);
+      }
 
       // Add audio icon for model messages if audio is enabled
       if (is_audio && role === "model") {
         const audioIcon = document.createElement("span");
         audioIcon.className = "audio-icon";
         messageElem.appendChild(audioIcon);
-      }
-
-      // Add the text content
+      }      // Add the text content
       messageElem.appendChild(
         document.createTextNode(message_from_server.data)
       );
@@ -309,6 +322,10 @@ function connectWebsocket() {
 async function initializeApp(userId = null) {
   currentUserId = userId;
   await initializeSession(userId);
+
+  // Initialize audio player for audio playback (even in text mode)
+  await initializeAudioPlayer();
+
   connectWebsocket();
 }
 
@@ -318,31 +335,20 @@ window.initializeApp = initializeApp;
 // Don't auto-start the application anymore - wait for user ID input
 // The landing page will call initializeApp when ready
 
-// Change audio mode without reconnecting
-async function changeAudioMode(enableAudio) {
-  if (websocket && websocket.readyState === WebSocket.OPEN) {
-    const modeMessage = {
-      mime_type: "application/mode-change",
-      mode: enableAudio ? "audio" : "text"
-    };
+// Change audio mode handling - client-side only since server always uses AUDIO modality
+function changeAudioMode(enableAudio) {
+  // Set the audio mode flag for client-side handling
+  is_audio = enableAudio;
 
-    // Send mode change request
-    sendMessage(modeMessage);
-
-    // Set the audio mode flag
-    is_audio = enableAudio;
-
-    // Add or remove audio styling class
-    if (enableAudio) {
-      messagesDiv.classList.add("audio-enabled");
-    } else {
-      messagesDiv.classList.remove("audio-enabled");
-    }
-
-    console.log(`Changed to ${enableAudio ? 'audio' : 'text'} mode`);
-    return true;
+  // Add or remove audio styling class
+  if (enableAudio) {
+    messagesDiv.classList.add("audio-enabled");
+  } else {
+    messagesDiv.classList.remove("audio-enabled");
   }
-  return false;
+
+  console.log(`[CLIENT] Audio mode ${enableAudio ? 'enabled' : 'disabled'} - server always uses AUDIO modality`);
+  return true;
 }
 
 // Add submit handler to the form
@@ -442,13 +448,20 @@ let isRecording = false;
 import { startAudioPlayerWorklet } from "./audio-player.js";
 import { startAudioRecorderWorklet } from "./audio-recorder.js";
 
-// Start audio
-function startAudio() {
-  // Start audio output
-  startAudioPlayerWorklet().then(([node, ctx]) => {
+// Initialize audio player immediately for audio playback
+async function initializeAudioPlayer() {
+  try {
+    const [node, ctx] = await startAudioPlayerWorklet();
     audioPlayerNode = node;
     audioPlayerContext = ctx;
-  });
+    console.log("[AUDIO] Audio player worklet initialized successfully");
+  } catch (error) {
+    console.error("[AUDIO] Failed to initialize audio player worklet:", error);
+  }
+}
+
+// Start audio recording (called when user clicks microphone button)
+function startAudioRecording() {
   // Start audio input
   startAudioRecorderWorklet(audioRecorderHandler).then(
     ([node, ctx, stream]) => {
@@ -456,12 +469,15 @@ function startAudio() {
       audioRecorderContext = ctx;
       micStream = stream;
       isRecording = true;
+      console.log("[AUDIO] Audio recording started");
     }
-  );
+  ).catch(error => {
+    console.error("[AUDIO] Failed to start audio recording:", error);
+  });
 }
 
 // Stop audio recording
-function stopAudio() {
+function stopAudioRecording() {
   if (audioRecorderNode) {
     audioRecorderNode.disconnect();
     audioRecorderNode = null;
@@ -470,7 +486,7 @@ function stopAudio() {
   if (audioRecorderContext) {
     audioRecorderContext
       .close()
-      .catch((err) => console.error("Error closing audio context:", err));
+      .catch((err) => console.error("Error closing audio recorder context:", err));
     audioRecorderContext = null;
   }
 
@@ -480,9 +496,10 @@ function stopAudio() {
   }
 
   isRecording = false;
+  console.log("[AUDIO] Audio recording stopped");
 }
 
-// Start the audio only when the user clicked the button
+// Start the audio recording when the user clicks the button
 // (due to the gesture requirement for the Web Audio API)
 startAudioButton.addEventListener("click", () => {
   startAudioButton.disabled = true;
@@ -491,15 +508,15 @@ startAudioButton.addEventListener("click", () => {
   startAudioButton.style.display = "none";
   stopAudioButton.style.display = "inline-block";
   recordingStatus.classList.add("active");
-  startAudio();
+  startAudioRecording();
 
-  // Change to audio mode without reconnecting
+  // Change to audio mode
   changeAudioMode(true);
 });
 
 // Stop audio recording when stop button is clicked
 stopAudioButton.addEventListener("click", () => {
-  stopAudio();
+  stopAudioRecording();
   stopAudioButton.style.display = "none";
   startAudioButton.style.display = "inline-block";
   startAudioButton.disabled = false;
@@ -507,7 +524,7 @@ stopAudioButton.addEventListener("click", () => {
   startAudioButton.classList.remove("recording");
   recordingStatus.classList.remove("active");
 
-  // Change to text mode without reconnecting
+  // Change to text mode
   changeAudioMode(false);
 });
 

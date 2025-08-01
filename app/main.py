@@ -82,8 +82,13 @@ UPLOAD_DIR.mkdir(exist_ok=True)
 function_call_completed = asyncio.Event()
 
 
-async def start_agent_session(session_id, user_id=None, is_audio=False):
-    """Starts an agent session"""
+async def start_agent_session(session_id, user_id=None):
+    """
+    Starts an agent session
+    
+    Always uses AUDIO modality to provide both audio output and text transcription.
+    Client-side handles whether to play audio or just display text.
+    """
 
     # Require user_id for authentication
     if not user_id:
@@ -111,24 +116,20 @@ async def start_agent_session(session_id, user_id=None, is_audio=False):
         memory_service=memory_service,  # Add Zep memory service
     )
 
-    # Set response modality using enum string values
-    modality = types.Modality.AUDIO if is_audio else types.Modality.TEXT
-
-    # Create speech config with voice settings
+    # Always use AUDIO modality, and include both output and input transcription
+    modality = types.Modality.AUDIO
     speech_config = types.SpeechConfig(
         voice_config=types.VoiceConfig(
-            # Puck, Charon, Kore, Fenrir, Aoede, Leda, Orus, and Zephyr
             prebuilt_voice_config=types.PrebuiltVoiceConfig(voice_name=DEFAULT_VOICE)
-        )
+        ),
+        language_code="en-IN",  # Default language for audio output
     )
-
-    # Create run config with basic settings
-    config = {"response_modalities": [modality], "speech_config": speech_config}
-
-    # Add output_audio_transcription when audio is enabled to get both audio and text
-    if is_audio:
-        config["output_audio_transcription"] = {}
-
+    config = {
+        "response_modalities": [modality],
+        "speech_config": speech_config,
+        "output_audio_transcription": {},  # Always get both audio and text
+        "input_audio_transcription": {},   # Show transcript of audio input
+    }
     run_config = RunConfig(**config)
 
     # Create a LiveRequestQueue for this session
@@ -144,16 +145,30 @@ async def start_agent_session(session_id, user_id=None, is_audio=False):
 
 
 async def agent_to_client_messaging(
-    websocket: WebSocket, live_events: AsyncIterable[Event | None]
+    websocket: WebSocket, live_events: AsyncIterable[Event | None], session
 ):
     """Agent to client communication"""
+    
+    # Buffer for accumulating audio input transcription
+    pending_user_text = ""
     while True:
         async for event in live_events:
             if event is None:
                 continue
 
-            # If the turn complete or interrupted, send it
+            # If the turn complete or interrupted, flush any buffered user text and send completion
             if event.turn_complete or event.interrupted:
+                # Flush buffered user transcription if still pending
+                if pending_user_text:
+                    user_msg = {
+                        "mime_type": "text/plain",
+                        "data": pending_user_text,
+                        "role": "user",
+                        "is_audio_input": True
+                    }
+                    await websocket.send_text(json.dumps(user_msg))
+                    print(f"[AGENT TO CLIENT]: buffered audio transcription on turn_complete: {pending_user_text}")
+                    pending_user_text = ""
                 message = {
                     "turn_complete": event.turn_complete,
                     "interrupted": event.interrupted,
@@ -171,16 +186,33 @@ async def agent_to_client_messaging(
             if not isinstance(part, types.Part):
                 continue
 
-            # Only send text if it's a partial response (streaming)
-            # Skip the final complete message to avoid duplication
-            if part.text and event.partial:
+            # Buffer any input audio transcription parts until sending as one message
+            if event.content and getattr(event.content, 'role', None) == "user" and part.text:
+                pending_user_text += part.text
+                # Do not send fragmented transcripts
+                continue
+
+            # Only send text if it's a partial model response (streaming)
+            if event.content and getattr(event.content, 'role', None) != "user" and part.text and event.partial:
+                # If we have buffered user transcription, send it once before model response
+                if pending_user_text:
+                    user_msg = {
+                        "mime_type": "text/plain",
+                        "data": pending_user_text,
+                        "role": "user",
+                        "is_audio_input": True
+                    }
+                    await websocket.send_text(json.dumps(user_msg))
+                    print(f"[AGENT TO CLIENT]: buffered audio transcription: {pending_user_text}")
+                    pending_user_text = ""
+                # Send model partial response
                 message = {
                     "mime_type": "text/plain",
                     "data": part.text,
                     "role": "model",
                 }
                 await websocket.send_text(json.dumps(message))
-                print(f"[AGENT TO CLIENT]: text/plain: {part.text}")
+                print(f"[AGENT TO CLIENT]: text/plain (partial model): {part.text}")
 
             # If it's audio, send Base64 encoded audio data
             is_audio = (
@@ -204,9 +236,6 @@ async def client_to_agent_messaging(
     websocket: WebSocket, live_request_queue: LiveRequestQueue, session
 ):
     """Client to agent communication"""
-    # Keep track of current mode
-    is_audio_mode = False
-    
     while True:
         message_json = await websocket.receive_text()
         message = json.loads(message_json)
@@ -214,28 +243,13 @@ async def client_to_agent_messaging(
         data = message.get("data", "")
         role = message.get("role", "user")
 
-        # Handle mode change messages
-        if mime_type == "application/mode-change":
-            new_mode = message.get("mode", "text")
-            is_audio_mode = (new_mode == "audio")
-            
-            # Acknowledge the mode change
-            response = {
-                "mime_type": "application/mode-change-ack",
-                "mode": new_mode,
-                "success": True
-            }
-            await websocket.send_text(json.dumps(response))
-            print(f"[MODE CHANGE] Changed to {new_mode} mode")
-            continue
-
+        # Handle messages - no mode switching needed since we always use AUDIO modality
         if mime_type == "text/plain":
             # Send just the user text - agent will automatically check for uploaded files
             part = types.Part(text=data or "")
             content = types.Content(role=role, parts=[part])
             live_request_queue.send_content(content=content)
             print(f"[CLIENT TO AGENT] Sent text: {data}")
-            
             # Add user event to session for memory storage
             user_event = Event(
                 author="user",
@@ -243,19 +257,14 @@ async def client_to_agent_messaging(
             )
             session.events.append(user_event)
             print(f"📝 Added user event to session: {data}")
-                
         elif mime_type == "audio/pcm":
             # Send audio data
             decoded_data = base64.b64decode(data)
-
-            # Send the audio data - note that ActivityStart/End and transcription
-            # handling is done automatically by the ADK when input_audio_transcription
-            # is enabled in the config
+            # Send the audio data - ADK will handle transcription if input_audio_transcription is enabled
             live_request_queue.send_realtime(
                 types.Blob(data=decoded_data, mime_type=mime_type)
             )
             print(f"[CLIENT TO AGENT]: audio/pcm: {len(decoded_data)} bytes")
-
         else:
             raise ValueError(f"Mime type not supported: {mime_type}")
 
@@ -594,23 +603,22 @@ async def upload_file(file: UploadFile = File(...)):
 async def websocket_endpoint(
     websocket: WebSocket,
     session_id: str,
-    is_audio: str = Query(...),
     user_id: str = Query(None),
 ):
     """Client websocket endpoint"""
 
     # Wait for client connection
     await websocket.accept()
-    print(f"Client #{session_id} connected, audio mode: {is_audio}, user: {user_id or 'default'}")
+    print(f"Client #{session_id} connected, user: {user_id or 'default'}")
 
     # Start agent session with user_id
     live_events, live_request_queue, session = await start_agent_session(
-        session_id, user_id, is_audio == "true"
+        session_id, user_id
     )
 
     # Start tasks
     agent_to_client_task = asyncio.create_task(
-        agent_to_client_messaging(websocket, live_events)
+        agent_to_client_messaging(websocket, live_events, session)
     )
     client_to_agent_task = asyncio.create_task(
         client_to_agent_messaging(websocket, live_request_queue, session)

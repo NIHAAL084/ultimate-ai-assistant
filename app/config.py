@@ -10,4 +10,4 @@ DEFAULT_HOST = "0.0.0.0"
 DEFAULT_PORT = 8001
 
 # Audio Configuration
-DEFAULT_VOICE = "Puck"  # Puck, Charon, Kore, Fenrir, Aoede, Leda, Orus, and Zephyr
+DEFAULT_VOICE = "Aoede"  # Laomedeia, Kore, Aoede, Leda, and Zephyr

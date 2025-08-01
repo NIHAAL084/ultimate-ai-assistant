@@ -135,13 +135,25 @@ class ZepMemoryService(BaseMemoryService):
                     session_id=session.id,
                 )
 
-                # Add messages to the Zep session
-                print(f"Adding {len(zep_messages)} messages to Zep session '{session.id}'...")
-                self.client.memory.add(
-                    session_id=session.id, # Use ADK session ID as Zep session ID
-                    messages=zep_messages
-                )
-                print(f"✅ Successfully added session '{session.id}' to Zep memory.")
+                # Zep has a limit of 30 messages per batch, so we need to process in chunks
+                batch_size = 30
+                total_messages = len(zep_messages)
+                
+                print(f"Adding {total_messages} messages to Zep session '{session.id}' in batches of {batch_size}...")
+                
+                for i in range(0, total_messages, batch_size):
+                    batch = zep_messages[i:i + batch_size]
+                    batch_num = (i // batch_size) + 1
+                    total_batches = (total_messages + batch_size - 1) // batch_size
+                    
+                    print(f"Processing batch {batch_num}/{total_batches} ({len(batch)} messages)...")
+                    
+                    self.client.memory.add(
+                        session_id=session.id, # Use ADK session ID as Zep session ID
+                        messages=batch
+                    )
+                    
+                print(f"✅ Successfully added all {total_messages} messages from session '{session.id}' to Zep memory.")
             except Exception as e:
                 print(f"💥 Unexpected error adding memory to Zep for session {session.id}: {e}")
                 raise
