@@ -31,6 +31,8 @@ class ZoraAgentExecutor(AgentExecutor):
         self.runner = runner
         self._running_sessions = {}
         logger.info("🚀 ZoraAgentExecutor initialized")
+        logger.info(f"   - AgentExecutor base class: {AgentExecutor}")
+        logger.info(f"   - Available methods: {[method for method in dir(self) if not method.startswith('_') and callable(getattr(self, method))]}")
 
     def _run_agent(
         self, session_id, new_message: types.Content, user_id: str = "a2a_client"
@@ -84,13 +86,13 @@ class ZoraAgentExecutor(AgentExecutor):
                             else:
                                 logger.debug(f"Response part {i}: {type(p.root)}")
                     
-                    task_updater.add_artifact(parts)
-                    task_updater.complete()
+                    await task_updater.add_artifact(parts)
+                    await task_updater.complete()
                     break
                     
                 if not event.get_function_calls():
                     logger.info("📤 Intermediate response update")
-                    task_updater.update_status(
+                    await task_updater.update_status(
                         TaskState.working,
                         message=task_updater.new_agent_message(
                             convert_genai_parts_to_a2a(
@@ -102,7 +104,7 @@ class ZoraAgentExecutor(AgentExecutor):
                     )
                 else:
                     logger.info(f"🔧 Function call event: {[call.name for call in event.get_function_calls()]}")
-                    task_updater.update_status(
+                    await task_updater.update_status(
                         TaskState.working,
                         message=task_updater.new_agent_message(
                             convert_genai_parts_to_a2a(
@@ -115,7 +117,7 @@ class ZoraAgentExecutor(AgentExecutor):
                     
             if event_count == 0:
                 logger.warning("⚠️ No events received from agent runner")
-                task_updater.update_status(
+                await task_updater.update_status(
                     TaskState.failed,
                     message="No response generated from agent"
                 )
@@ -140,15 +142,29 @@ class ZoraAgentExecutor(AgentExecutor):
             logger.error("❌ Missing message in context")
             raise ValueError("RequestContext must have a message")
 
-        logger.info("📤 Creating TaskUpdater and submitting task")
-        updater = TaskUpdater(event_queue, context.task_id, context.context_id)
+        logger.info("📤 Creating task and enqueuing to event_queue")
+        
+        # Import the new_task utility function
+        from a2a.utils import new_task
+        
+        # Create or get the task - this is the key step we were missing!
+        task = context.current_task or new_task(context.message)
+        logger.info(f"📤 Task created/retrieved: {task.id}")
+        
+        # Enqueue the task event - this is crucial for task to be found in store
+        await event_queue.enqueue_event(task)
+        logger.info(f"📤 Task enqueued to event_queue: {task.id}")
+        
+        # Now create TaskUpdater with the task that exists in the store
+        # Use the correct property name for context_id
+        task_context_id = getattr(task, 'context_id', getattr(task, 'contextId', context.context_id))
+        updater = TaskUpdater(event_queue, task.id, task_context_id)
+        logger.info("📤 TaskUpdater created successfully")
         
         try:
-            if not context.current_task:
-                logger.info("📤 Submitting new task to store")
-                updater.submit()
+            # The task is already in the store, so we can start work immediately
             logger.info("📤 Starting work")
-            updater.start_work()
+            await updater.start_work()
             
             # Use a default user_id for A2A requests, or extract from context if available
             user_id = getattr(context, 'user_id', 'a2a_client')
@@ -171,7 +187,7 @@ class ZoraAgentExecutor(AgentExecutor):
         except Exception as e:
             logger.error(f"💥 Error during A2A request processing: {str(e)}", exc_info=True)
             # Ensure we send an error response to the client
-            updater.update_status(
+            await updater.update_status(
                 TaskState.failed,
                 message=f"Error processing request: {str(e)}"
             )

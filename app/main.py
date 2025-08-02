@@ -98,7 +98,7 @@ async def start_agent_session(session_id, user_id=None):
     effective_user_id = user_id.lower().strip()
 
     # Create user-specific agent
-    user_agent = create_agent(user_id=effective_user_id)
+    user_agent = create_agent(user_id=effective_user_id, model_id="gemini-live-2.5-flash-preview")
 
     # Create a Session
     session = await session_service.create_session(

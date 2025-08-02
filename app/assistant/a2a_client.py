@@ -106,8 +106,7 @@ class RemoteAgentManager:
         self, 
         agent_name: str, 
         message: str, 
-        context_id: Optional[str] = None,
-        task_id: Optional[str] = None
+        context_id: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Send a message to a specific agent.
@@ -116,7 +115,6 @@ class RemoteAgentManager:
             agent_name: Name of the agent to send message to
             message: The message text to send
             context_id: Optional context ID for the conversation
-            task_id: Optional task ID for the request
             
         Returns:
             List of response parts from the agent
@@ -132,17 +130,14 @@ class RemoteAgentManager:
         # Generate IDs if not provided
         if not context_id:
             context_id = str(uuid.uuid4())
-        if not task_id:
-            task_id = str(uuid.uuid4())
         message_id = str(uuid.uuid4())
 
-        # Create the message payload
+        # Create the message payload - let server generate taskId
         payload = {
             "message": {
                 "role": "user",
                 "parts": [{"type": "text", "text": message}],
                 "messageId": message_id,
-                "taskId": task_id,
                 "contextId": context_id,
             },
         }

@@ -11,7 +11,7 @@ from datetime import datetime
 from typing import Optional
 
 
-def create_agent(user_id: Optional[str] = None) -> Agent:
+def create_agent(user_id: Optional[str] = None, model_id: str = "gemini-2.0-flash") -> Agent:
     """Create agent with dynamic datetime in the instruction and user-specific sub-agents"""
     current_time = datetime.now().strftime("%A, %B %d, %Y at %I:%M %p")
     
@@ -34,11 +34,10 @@ Important: Always use the current date and time information provided above for c
     
     return Agent(
         name="assistant",
-        model="gemini-live-2.5-flash-preview",
+        model=model_id,
         description="Agent to help with online search, document processing, image analysis, and remembering past conversations.",
         instruction=dynamic_prompt,
         tools=[
-            google_search,
             load_memory,
             process_document_tool,
             register_uploaded_files_tool,

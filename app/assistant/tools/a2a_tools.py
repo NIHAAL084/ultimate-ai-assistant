@@ -64,8 +64,7 @@ async def send_message_to_agent(
         response_parts = await manager.send_message_to_agent(
             agent_name=agent_name,
             message=message,
-            context_id=context_id,
-            task_id=task_id
+            context_id=context_id
         )
         
         if not response_parts:

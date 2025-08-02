@@ -120,7 +120,7 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
         )
 
         # Create ADK agent with configured user for A2A requests
-        adk_agent = create_agent(user_id=user_id)
+        adk_agent = create_agent(user_id=user_id, model_id="gemini-2.0-flash")
         
         # Initialize memory service
         try:
@@ -148,11 +148,32 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
         logger.info("✅ Created InMemoryTaskStore")
 
         # Create request handler - following sample patterns (no queue_manager needed)
-        request_handler = DefaultRequestHandler(
+        logger.info("🎯 Creating DefaultRequestHandler with detailed logging")
+        logger.info(f"   - agent_executor type: {type(agent_executor)}")
+        logger.info(f"   - task_store type: {type(task_store)}")
+        
+        # Create a custom request handler that logs method calls
+        class LoggingRequestHandler(DefaultRequestHandler):
+            async def on_message_send(self, params, context=None):
+                logger.info("🎯 DefaultRequestHandler.on_message_send called!")
+                logger.info(f"   - params: {params}")
+                return await super().on_message_send(params, context)
+            
+            async def on_message_send_stream(self, params, context=None):
+                logger.info("🎯 DefaultRequestHandler.on_message_send_stream called!")
+                logger.info(f"   - params: {params}")
+                async for event in super().on_message_send_stream(params, context):
+                    yield event
+        
+        request_handler = LoggingRequestHandler(
             agent_executor=agent_executor,
             task_store=task_store,
         )
-        logger.info("✅ Created DefaultRequestHandler")
+        logger.info("✅ Created LoggingRequestHandler")
+        
+        # Test if the request handler is properly configured
+        logger.info(f"   - handler.agent_executor: {hasattr(request_handler, 'agent_executor')}")
+        logger.info(f"   - handler.task_store: {hasattr(request_handler, 'task_store')}")
 
         # Create A2A application - following sample patterns
         logger.info("🎯 Creating A2AStarletteApplication")
@@ -161,20 +182,28 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
             http_handler=request_handler,
         )
         
-        # Add request logging middleware with proper typing
-        class LoggingMiddleware(BaseHTTPMiddleware):
+        # Add detailed request logging middleware
+        class DetailedLoggingMiddleware(BaseHTTPMiddleware):
             async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
                 start_time = time.time()
                 logger.info(f"📥 Incoming {request.method} request to {request.url.path}")
-                
+                logger.info(f"   - URL: {request.url}")
+                logger.info(f"   - Headers: {dict(request.headers)}")
+                # Log JSON body for POST requests
+                if request.method == "POST":
+                    try:
+                        body = await request.json()
+                        logger.info(f"   - Body JSON: {body}")
+                    except Exception:
+                        logger.info("   - Body JSON: <could not parse>")
+                # Proceed to next handler
                 response = await call_next(request)
-                
                 process_time = time.time() - start_time
                 logger.info(f"📤 Completed {request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.3f}s")
                 return response
 
         starlette_app = server.build()
-        starlette_app.add_middleware(LoggingMiddleware)
+        starlette_app.add_middleware(DetailedLoggingMiddleware)
         
         logger.info("✅ A2AStarletteApplication created successfully with logging middleware")
         
