@@ -144,8 +144,6 @@ class ZoraAgentExecutor(AgentExecutor):
         updater = TaskUpdater(event_queue, context.task_id, context.context_id)
         
         try:
-            
-            updater.submit()
             if not context.current_task:
                 logger.info("📤 Submitting new task to store")
                 updater.submit()
