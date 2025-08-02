@@ -5,16 +5,32 @@ This starts both the main FastAPI server and the A2A server concurrently.
 
 import asyncio
 import logging
+import os
 import uvicorn
 from .config import DEFAULT_HOST, DEFAULT_PORT
 from .a2a_server import create_a2a_server, get_a2a_config
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Enable debug logging for A2A components
+logging.getLogger('a2a').setLevel(logging.DEBUG)
+logging.getLogger('a2a.server').setLevel(logging.DEBUG)
+logging.getLogger('a2a.server.request_handlers').setLevel(logging.DEBUG)
+logging.getLogger('a2a.server.tasks').setLevel(logging.DEBUG)
+
+# Enable asyncio debugging
+import sys
+if sys.version_info >= (3, 7):
+    import asyncio
+    asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy() if sys.platform == 'win32' else asyncio.DefaultEventLoopPolicy())
+
+# Set asyncio debug mode
+os.environ['PYTHONASYNCIODEBUG'] = '1'
 
 
 async def run_fastapi_server():
@@ -50,13 +66,18 @@ async def run_a2a_server():
         # Create A2A server
         a2a_app = create_a2a_server(host=host, port=port, user_id=user_id)
         
+        # Check if server was actually created (could be None if disabled)
+        if a2a_app is None:
+            logger.info("⚠️ A2A server creation returned None - server disabled")
+            return
+        
         # Run A2A server
         config = uvicorn.Config(
-            a2a_app.build(),
+            a2a_app,  # a2a_app is already the built Starlette app
             host=host,
             port=port,
             reload=False,
-            log_level="info"
+            log_level="debug"
         )
         server = uvicorn.Server(config)
         await server.serve()

@@ -73,9 +73,9 @@ class ZepMemoryService(BaseMemoryService):
         """
         author_lower = author.lower()
         if author_lower == "user":
-            return RoleType.USER  # Use Zep's user role type
+            return "user"
         else:
-            return RoleType.ASSISTANT  # Use Zep's assistant role type
+            return "assistant"
 
     @override
     async def add_session_to_memory(self, session: Session) -> None:

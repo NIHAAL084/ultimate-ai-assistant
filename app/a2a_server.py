@@ -18,16 +18,23 @@ from a2a.types import (
 from google.adk.artifacts import InMemoryArtifactService
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from starlette.applications import Starlette
+from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
+from starlette.requests import Request
+from starlette.responses import Response
+import time
 
 from .a2a_agent_executor import ZoraAgentExecutor
 from .assistant.agent import create_agent
 from .assistant.utils.zep_memory_service import ZepMemoryService
-from .config import APP_NAME, A2A_SERVER_DEFAULT_USER, NGROK_URL, ACTIVATE_A2A_SERVER, A2A_HOST, A2A_PORT
+from .config import APP_NAME, A2A_SERVER_DEFAULT_USER, NGROK_URL, ACTIVATE_A2A_SERVER
+from typing import Optional, Dict, Any
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 
-def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optional[str] = None) -> A2AStarletteApplication:
+def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optional[str] = None) -> Optional[Starlette]:
     """
     Creates an A2A server for ZORA Assistant.
     
@@ -37,17 +44,22 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
         user_id: User ID for the A2A server agent context
         
     Returns:
-        A2AStarletteApplication instance ready to serve
+        Starlette application instance ready to serve, or None if disabled
     """
+    # Check if A2A server is enabled
+    if not ACTIVATE_A2A_SERVER:
+        logger.info("🚫 A2A server is disabled by configuration")
+        return None
+        
     # Use provided user_id or fall back to config default
     if user_id is None:
         user_id = A2A_SERVER_DEFAULT_USER
         
-    logger.info(f"Creating A2A server for ZORA on {host}:{port} with user_id: {user_id}")
+    logger.info(f"🚀 Creating A2A server for ZORA on {host}:{port} with user_id: {user_id}")
     
     try:
-        # Define agent capabilities
-        capabilities = AgentCapabilities(streaming=True)
+        # Define agent capabilities - disable streaming for now to ensure completion
+        capabilities = AgentCapabilities(streaming=False)
         
         # Define agent skills
         skills = [
@@ -95,14 +107,14 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
             ),
         ]
         
-        # Create agent card
+        # Create agent card - following the sample patterns
         agent_card = AgentCard(
             name="ZORA Assistant",
             description="ZORA is a comprehensive AI assistant with voice interaction, persistent memory, and real-world integrations including web search, document processing, task management, calendar, and email.",
             url=NGROK_URL,
             version="1.0.0",
-            defaultInputModes=["text/plain"],
-            defaultOutputModes=["text/plain"],
+            default_input_modes=["text/plain"],
+            default_output_modes=["text/plain"],
             capabilities=capabilities,
             skills=skills,
         )
@@ -129,21 +141,45 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
         
         # Create agent executor
         agent_executor = ZoraAgentExecutor(runner)
+        logger.info("✅ Created ZoraAgentExecutor")
 
-        # Create request handler
+        # Create task store - following the sample patterns
+        task_store = InMemoryTaskStore()
+        logger.info("✅ Created InMemoryTaskStore")
+
+        # Create request handler - following sample patterns (no queue_manager needed)
         request_handler = DefaultRequestHandler(
             agent_executor=agent_executor,
-            task_store=InMemoryTaskStore(),
+            task_store=task_store,
+        )
+        logger.info("✅ Created DefaultRequestHandler")
+
+        # Create A2A application - following sample patterns
+        logger.info("🎯 Creating A2AStarletteApplication")
+        server = A2AStarletteApplication(
+            agent_card=agent_card,
+            http_handler=request_handler,
         )
         
-        # Create A2A server
-        server = A2AStarletteApplication(
-            agent_card=agent_card, 
-            http_handler=request_handler
-        )
+        # Add request logging middleware with proper typing
+        class LoggingMiddleware(BaseHTTPMiddleware):
+            async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
+                start_time = time.time()
+                logger.info(f"📥 Incoming {request.method} request to {request.url.path}")
+                
+                response = await call_next(request)
+                
+                process_time = time.time() - start_time
+                logger.info(f"📤 Completed {request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.3f}s")
+                return response
+
+        starlette_app = server.build()
+        starlette_app.add_middleware(LoggingMiddleware)
+        
+        logger.info("✅ A2AStarletteApplication created successfully with logging middleware")
         
         logger.info(f"✅ A2A server created successfully for ZORA on {host}:{port}")
-        return server
+        return starlette_app
         
     except Exception as e:
         logger.error(f"💥 Failed to create A2A server: {e}")
