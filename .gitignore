@@ -172,3 +172,6 @@ user_data/credentials/credentials_*.json
 user_data/oauth_credentials/
 user_data/gmail_credentials/credentials_*.json
 user_data/calendar_credentials/credentials_*.json
+
+# Database files
+users.db

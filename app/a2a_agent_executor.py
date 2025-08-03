@@ -21,7 +21,8 @@ from google.adk.events import Event
 from google.genai import types
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# Reduced logging level from DEBUG to INFO to reduce verbosity
+logger.setLevel(logging.INFO)
 
 
 class ZoraAgentExecutor(AgentExecutor):

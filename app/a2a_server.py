@@ -4,8 +4,7 @@ This allows other agents to communicate with ZORA using the Agent-to-Agent proto
 """
 
 import logging
-import os
-from typing import Optional, Dict, Any
+from typing import Optional
 
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -25,13 +24,14 @@ from starlette.responses import Response
 import time
 
 from .a2a_agent_executor import ZoraAgentExecutor
-from .assistant.agent import create_agent
+from .assistant.agent import create_agent  # type: ignore
 from .assistant.utils.zep_memory_service import ZepMemoryService
 from .config import APP_NAME, A2A_SERVER_DEFAULT_USER, NGROK_URL, ACTIVATE_A2A_SERVER
-from typing import Optional, Dict, Any
+from typing import Optional
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+# Reduced logging level from DEBUG to INFO to reduce verbosity
+logger.setLevel(logging.INFO)
 
 
 def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optional[str] = None) -> Optional[Starlette]:
@@ -111,7 +111,7 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
         agent_card = AgentCard(
             name="ZORA Assistant",
             description="ZORA is a comprehensive AI assistant with voice interaction, persistent memory, and real-world integrations including web search, document processing, task management, calendar, and email.",
-            url=NGROK_URL,
+            url=NGROK_URL if NGROK_URL is not None else "",
             version="1.0.0",
             default_input_modes=["text/plain"],
             default_output_modes=["text/plain"],
@@ -120,7 +120,7 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
         )
 
         # Create ADK agent with configured user for A2A requests
-        adk_agent = create_agent(user_id=user_id, model_id="gemini-2.0-flash")
+        adk_agent = create_agent(user_id=user_id, model_id="gemini-2.0-flash")  # type: ignore
         
         # Initialize memory service
         try:
@@ -133,7 +133,7 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
         # Create runner
         runner = Runner(
             app_name=APP_NAME,
-            agent=adk_agent,
+            agent=adk_agent,  # type: ignore
             artifact_service=InMemoryArtifactService(),
             session_service=InMemorySessionService(),
             memory_service=memory_service,
@@ -152,24 +152,12 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
         logger.info(f"   - agent_executor type: {type(agent_executor)}")
         logger.info(f"   - task_store type: {type(task_store)}")
         
-        # Create a custom request handler that logs method calls
-        class LoggingRequestHandler(DefaultRequestHandler):
-            async def on_message_send(self, params, context=None):
-                logger.info("🎯 DefaultRequestHandler.on_message_send called!")
-                logger.info(f"   - params: {params}")
-                return await super().on_message_send(params, context)
-            
-            async def on_message_send_stream(self, params, context=None):
-                logger.info("🎯 DefaultRequestHandler.on_message_send_stream called!")
-                logger.info(f"   - params: {params}")
-                async for event in super().on_message_send_stream(params, context):
-                    yield event
-        
-        request_handler = LoggingRequestHandler(
+        # Use DefaultRequestHandler directly (no extra logging)
+        request_handler = DefaultRequestHandler(
             agent_executor=agent_executor,
             task_store=task_store,
         )
-        logger.info("✅ Created LoggingRequestHandler")
+        logger.info("✅ Created DefaultRequestHandler")
         
         # Test if the request handler is properly configured
         logger.info(f"   - handler.agent_executor: {hasattr(request_handler, 'agent_executor')}")
@@ -213,13 +201,3 @@ def create_a2a_server(host: str = "localhost", port: int = 10003, user_id: Optio
     except Exception as e:
         logger.error(f"💥 Failed to create A2A server: {e}")
         raise
-
-
-def get_a2a_config() -> Dict[str, Any]:
-    """Get A2A server configuration from environment variables."""
-    return {
-        "enabled": os.getenv("ACTIVATE_A2A_SERVER", str(ACTIVATE_A2A_SERVER)).lower() == "true",
-        "host": os.getenv("A2A_HOST", "0.0.0.0"),
-        "port": int(os.getenv("A2A_PORT", "80")),
-        "user_id": os.getenv("A2A_SERVER_USER_ID", A2A_SERVER_DEFAULT_USER),
-    }

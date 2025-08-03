@@ -5,10 +5,11 @@ description = "ZORA - Multi-modal AI assistant with voice interaction, persisten
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "a2a-sdk>=0.2.5",                              # Agent-to-Agent protocol support
+    "a2a-sdk>=0.2.5", # Agent-to-Agent protocol support
     "annotated-types==0.7.0",
     "anyio==4.9.0",
     "authlib==1.5.2",
+    "bcrypt>=4.0.0", # Password hashing for authentication
     "cachetools==5.5.2",
     "certifi==2025.4.26",
     "cffi==1.17.1",
@@ -18,6 +19,7 @@ dependencies = [
     "deprecated==1.2.18",
     "docstring-parser==0.16",
     "fastapi==0.115.12",
+    "fitz>=0.0.1.dev2",
     "google-adk==1.8.0",
     "google-api-core==2.24.2",
     "google-api-python-client==2.169.0",

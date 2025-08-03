@@ -11,62 +11,32 @@ warnings.filterwarnings("ignore", message=".*auth_config.*auth_scheme.*missing.*
 
 # Reduce logging verbosity for MCP tools
 logging.getLogger("google.adk.tools.mcp_tool").setLevel(logging.ERROR)
+# Suppress MCP-related asyncio errors during shutdown
+logging.getLogger("mcp").setLevel(logging.WARNING)
+logging.getLogger("mcp.client").setLevel(logging.WARNING)
+logging.getLogger("mcp.client.stdio").setLevel(logging.WARNING)
 
 from .prompt import CALENDAR_PROMPT
 
-# Import user environment manager with correct path
+# Import credentials manager
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
-from app.user_env import UserEnvironmentManager
+from app.credentials import get_user_env_for_agent
 
 
 def get_calendar_env_for_user(user_id: Optional[str] = None) -> Dict[str, str]:
     """Get calendar environment variables for a specific user."""
-    if user_id:
-        try:
-            # Normalize user_id to lowercase
-            normalized_user_id = user_id.lower().strip()
-            user_env = UserEnvironmentManager(normalized_user_id)
-            
-            # Calendar MCP Server expects OAuth credentials similar to Gmail
-            google_oauth_credentials = user_env.get_env_var("GOOGLE_OAUTH_CREDENTIALS")
-            
-            # Resolve relative paths to absolute paths
-            if google_oauth_credentials and not os.path.isabs(google_oauth_credentials):
-                # Get the project root directory (ultimate-ai-assistant)
-                project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
-                google_oauth_credentials = os.path.join(project_root, google_oauth_credentials)
-                
-        except Exception:
-            # Fall back to None if user-specific environment is not available
-            google_oauth_credentials = None
-    else:
-        # No user_id provided, use None
-        google_oauth_credentials = None
+    if not user_id:
+        print(f"⚠️ No user_id provided - Calendar agent will have limited functionality")
+        return {}
     
-    if google_oauth_credentials is None:
-        print(f"⚠️ GOOGLE_OAUTH_CREDENTIALS not set for user {user_id or 'default'} - Calendar agent will have limited functionality")
+    # Use new credentials system
+    calendar_env = get_user_env_for_agent(user_id, 'calendar')
     
-    # Environment variables for Google Calendar MCP server
-    calendar_env: Dict[str, str] = {}
-    if google_oauth_credentials and user_id:
-        # Set up user-specific Calendar paths in user_data
-        project_root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))))
-        user_data_dir = os.path.join(project_root, "user_data")
-        calendar_credentials_dir = os.path.join(user_data_dir, "calendar_credentials")
-        
-        # Ensure the calendar_credentials directory exists
-        os.makedirs(calendar_credentials_dir, exist_ok=True)
-        
-        # Use the OAuth file for authentication
-        calendar_env["GOOGLE_OAUTH_CREDENTIALS"] = google_oauth_credentials
-        
-        # Set user-specific token storage path
-        normalized_user_id = user_id.lower().strip()
-        user_token_path = os.path.join(calendar_credentials_dir, f"credentials_{normalized_user_id}.json")
-        calendar_env["GOOGLE_CALENDAR_MCP_TOKEN_PATH"] = user_token_path
-    
+    if not calendar_env.get("GOOGLE_OAUTH_CREDENTIALS"):
+        print(f"⚠️ GOOGLE_OAUTH_CREDENTIALS not set for user {user_id} - Calendar agent will have limited functionality")
+
     return calendar_env
 
 

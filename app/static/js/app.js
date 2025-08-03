@@ -14,6 +14,9 @@ let is_audio = false;
 let currentMessageId = null; // Track the current message ID during a conversation turn
 let currentUserId = null; // Current user ID
 
+// Make sessionId globally accessible
+window.sessionId = sessionId;
+
 // Generate random session ID for each conversation
 // Now that we have ZepMemoryService, we don't need deterministic session IDs
 function generateRandomSessionId() {
@@ -23,8 +26,10 @@ function generateRandomSessionId() {
 // Initialize session ID with user ID
 async function initializeSession(userId = null) {
   try {
-    // Generate a new random session ID for each conversation
+    // Always generate a new random session ID to prevent conflicts with existing Zep sessions
+    // This is especially important after server restarts to avoid session conflicts
     sessionId = generateRandomSessionId();
+    window.sessionId = sessionId; // Keep global reference in sync
     // Include user_id in the WebSocket URL if provided
     // Server always uses AUDIO modality, no need for is_audio parameter
     const userParam = userId ? `user_id=${encodeURIComponent(userId)}` : '';
@@ -35,6 +40,7 @@ async function initializeSession(userId = null) {
     console.error('Failed to initialize session:', error);
     // Fallback to simpler random session ID
     sessionId = 'fallback_' + Math.random().toString().substring(2);
+    window.sessionId = sessionId; // Keep global reference in sync
     const userParam = userId ? `user_id=${encodeURIComponent(userId)}` : '';
     ws_url = "ws://" + window.location.host + "/ws/" + sessionId + (userParam ? `?${userParam}` : '');
     return false;
@@ -170,6 +176,7 @@ async function uploadFiles() {
 function connectWebsocket() {
   // Connect websocket - ws_url already contains all necessary parameters
   websocket = new WebSocket(ws_url);
+  window.websocket = websocket; // Make globally accessible
 
   // Handle connection open
   websocket.onopen = function () {
@@ -177,6 +184,14 @@ function connectWebsocket() {
     console.log("WebSocket connection opened.");
     connectionStatus.textContent = "Connected";
     statusDot.classList.add("connected");
+
+    // Verify user authentication by sending a test message
+    // If the server rejects due to authentication, it will close the connection
+    if (currentUserId) {
+      console.log(`WebSocket connected for authenticated user: ${currentUserId}`);
+    } else {
+      console.warn("WebSocket connected without user authentication");
+    }
 
     // Enable the Send button
     document.getElementById("sendButton").disabled = false;
@@ -298,16 +313,25 @@ function connectWebsocket() {
   };
 
   // Handle connection close
-  websocket.onclose = function () {
-    console.log("WebSocket connection closed.");
+  websocket.onclose = function (event) {
+    console.log("WebSocket connection closed.", event);
     document.getElementById("sendButton").disabled = true;
-    connectionStatus.textContent = "Disconnected. Reconnecting...";
+    connectionStatus.textContent = "Disconnected";
     statusDot.classList.remove("connected");
     typingIndicator.classList.remove("visible");
-    setTimeout(function () {
-      console.log("Reconnecting...");
-      connectWebsocket();
-    }, 5000);
+
+    // Check if this was a manual close (user clicked back to home)
+    if (websocket.isManualClose) {
+      console.log("Manual disconnect - session terminated by user.");
+      return; // Don't try to reconnect or return to home
+    }
+
+    // For any unexpected disconnect (including server restart), return to login
+    // This ensures users must re-authenticate after server issues
+    console.log("Server disconnected. Returning to login to re-authenticate.");
+    if (typeof window.returnToHome === 'function') {
+      window.returnToHome();
+    }
   };
 
   websocket.onerror = function (e) {
@@ -315,6 +339,15 @@ function connectWebsocket() {
     connectionStatus.textContent = "Connection error";
     statusDot.classList.remove("connected");
     typingIndicator.classList.remove("visible");
+
+    // On connection error, return to login after a brief delay
+    // This handles authentication failures and other connection issues
+    setTimeout(function () {
+      if (typeof window.returnToHome === 'function') {
+        console.log("Connection error - returning to login for re-authentication.");
+        window.returnToHome();
+      }
+    }, 2000); // Reduced delay for faster feedback
   };
 }
 

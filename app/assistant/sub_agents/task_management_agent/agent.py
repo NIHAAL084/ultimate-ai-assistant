@@ -11,14 +11,18 @@ warnings.filterwarnings("ignore", message=".*auth_config.*auth_scheme.*missing.*
 
 # Reduce logging verbosity for MCP tools
 logging.getLogger("google.adk.tools.mcp_tool").setLevel(logging.ERROR)
+# Suppress MCP-related asyncio errors during shutdown
+logging.getLogger("mcp").setLevel(logging.WARNING)
+logging.getLogger("mcp.client").setLevel(logging.WARNING)
+logging.getLogger("mcp.client.stdio").setLevel(logging.WARNING)
 
 from .prompt import TASK_MANAGEMENT_PROMPT
 
-# Import user environment manager with correct path
+# Import credentials manager
 import sys
 import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../..'))
-from app.user_env import get_user_env_var, UserEnvironmentManager
+from app.credentials import get_user_env_for_agent
 
 # ---- Todoist MCP Server ----
 # Using Gemini-compatible Todoist MCP server by nihaal084
@@ -27,27 +31,16 @@ from app.user_env import get_user_env_var, UserEnvironmentManager
 
 def get_task_env_for_user(user_id: Optional[str] = None) -> Dict[str, str]:
     """Get task management environment variables for a specific user."""
-    if user_id:
-        try:
-            # Normalize user_id to lowercase
-            normalized_user_id = user_id.lower().strip()
-            user_env = UserEnvironmentManager(normalized_user_id)
-            todoist_api_token = user_env.get_env_var("TODOIST_API_TOKEN")
-        except (ImportError, FileNotFoundError, KeyError):
-            # Fall back to None if user-specific environment is not available
-            todoist_api_token = None
-    else:
-        # No user_id provided, use None
-        todoist_api_token = None
+    if not user_id:
+        print(f"⚠️ No user_id provided - Task Management agent will have limited functionality")
+        return {}
     
-    if todoist_api_token is None:
-        print(f"⚠️ TODOIST_API_TOKEN not set for user {user_id or 'default'} - Task Management agent will have limited functionality")
+    # Use new credentials system
+    task_env = get_user_env_for_agent(user_id, 'todoist')
+    
+    if not task_env.get("TODOIST_API_TOKEN"):
+        print(f"⚠️ TODOIST_API_TOKEN not set for user {user_id} - Task Management agent will have limited functionality")
 
-    # Environment variables for Todoist MCP server
-    task_env: Dict[str, str] = {}
-    if todoist_api_token:
-        task_env["TODOIST_API_TOKEN"] = todoist_api_token
-    
     return task_env
 
 def create_task_management_agent(user_id: Optional[str] = None) -> Agent:

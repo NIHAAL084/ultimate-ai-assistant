@@ -974,11 +974,14 @@
     .registration-container {
       display: none;
       justify-content: center;
-      align-items: center;
-      height: 100vh;
+      align-items: flex-start;
+      min-height: 100vh;
       width: 100vw;
       position: relative;
       z-index: 2;
+      padding: 20px;
+      overflow-y: auto;
+      box-sizing: border-box;
     }
 
     .registration-box {
@@ -992,8 +995,12 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
       padding: 40px;
       width: 450px;
+      max-width: 90vw;
       text-align: left;
       animation: slideIn 0.5s ease-out;
+      margin: 20px auto;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
     }
 
     .registration-title {
@@ -1141,11 +1148,14 @@
     .update-container {
       display: none;
       justify-content: center;
-      align-items: center;
-      height: 100vh;
+      align-items: flex-start;
+      min-height: 100vh;
       width: 100vw;
       position: relative;
       z-index: 2;
+      padding: 20px;
+      overflow-y: auto;
+      box-sizing: border-box;
     }
 
     .update-box {
@@ -1159,8 +1169,12 @@
         inset 0 1px 0 rgba(255, 255, 255, 0.1);
       padding: 40px;
       width: 450px;
+      max-width: 90vw;
       text-align: left;
       animation: slideIn 0.5s ease-out;
+      margin: 20px auto;
+      max-height: calc(100vh - 40px);
+      overflow-y: auto;
     }
 
     .update-title {
@@ -1336,17 +1350,26 @@
 <body>
   <div id="dither-background"></div>
 
-  <!-- User ID Prompt -->
+  <!-- User Login Prompt -->
   <div id="user-prompt-container" class="user-prompt-container">
     <div class="user-prompt-box">
       <h2 class="user-prompt-title">Welcome to ZORA</h2>
-      <p class="user-prompt-subtitle">Please enter your User ID to access your personalized AI assistant</p>
+      <p class="user-prompt-subtitle">Please enter your credentials to access your personalized AI assistant</p>
 
       <form id="userIdForm">
         <div class="user-input-group">
           <input type="text" id="userId" class="user-input" placeholder="Enter your User ID" required>
         </div>
-        <button type="submit" class="user-submit-btn">Submit</button>
+        <div class="user-input-group">
+          <div class="input-with-toggle">
+            <input type="password" id="userPassword" class="user-input password-input" placeholder="Enter your password"
+              required>
+            <button type="button" class="password-toggle" onclick="togglePassword('userPassword')">
+              <i class="fas fa-eye" id="userPassword-toggle-icon"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="user-submit-btn">Login</button>
       </form>
 
       <div class="user-actions">
@@ -1370,6 +1393,33 @@
           <label for="regUserId" class="registration-label">User ID</label>
           <input type="text" id="regUserId" class="registration-input" placeholder="Enter your desired User ID"
             required>
+        </div>
+
+        <div class="registration-input-group">
+          <label for="regPassword" class="registration-label">Password</label>
+          <div class="input-with-toggle">
+            <input type="password" id="regPassword" class="registration-input password-input"
+              placeholder="Enter your password (min 8 characters)" required>
+            <button type="button" class="password-toggle" onclick="togglePassword('regPassword')">
+              <i class="fas fa-eye" id="regPassword-toggle-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="registration-input-group">
+          <label for="regPasswordConfirm" class="registration-label">Confirm Password</label>
+          <div class="input-with-toggle">
+            <input type="password" id="regPasswordConfirm" class="registration-input password-input"
+              placeholder="Re-enter your password" required>
+            <button type="button" class="password-toggle" onclick="togglePassword('regPasswordConfirm')">
+              <i class="fas fa-eye" id="regPasswordConfirm-toggle-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="registration-input-group">
+          <label for="regLocation" class="registration-label">Location</label>
+          <input type="text" id="regLocation" class="registration-input" placeholder="Enter your location" required>
         </div>
 
         <div class="registration-input-group">
@@ -1408,6 +1458,44 @@
       <p class="update-subtitle">Update your credentials for <span id="updateUserId"></span></p>
 
       <form id="updateForm">
+        <div class="update-input-group">
+          <label for="updateCurrentPassword" class="update-label">Current Password</label>
+          <div class="input-with-toggle">
+            <input type="password" id="updateCurrentPassword" class="update-input password-input"
+              placeholder="Enter your current password" required>
+            <button type="button" class="password-toggle" onclick="togglePassword('updateCurrentPassword')">
+              <i class="fas fa-eye" id="updateCurrentPassword-toggle-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="update-input-group">
+          <label for="updateNewPassword" class="update-label">New Password (optional)</label>
+          <div class="input-with-toggle">
+            <input type="password" id="updateNewPassword" class="update-input password-input"
+              placeholder="Enter new password (min 8 characters)">
+            <button type="button" class="password-toggle" onclick="togglePassword('updateNewPassword')">
+              <i class="fas fa-eye" id="updateNewPassword-toggle-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="update-input-group">
+          <label for="updatePasswordConfirm" class="update-label">Confirm New Password</label>
+          <div class="input-with-toggle">
+            <input type="password" id="updatePasswordConfirm" class="update-input password-input"
+              placeholder="Re-enter new password">
+            <button type="button" class="password-toggle" onclick="togglePassword('updatePasswordConfirm')">
+              <i class="fas fa-eye" id="updatePasswordConfirm-toggle-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="update-input-group">
+          <label for="updateLocation" class="update-label">Location (optional)</label>
+          <input type="text" id="updateLocation" class="update-input" placeholder="Enter your location">
+        </div>
+
         <div class="update-input-group">
           <label for="updateTodoistToken" class="update-label">Todoist API Token (optional)</label>
           <div class="input-with-toggle">
@@ -1495,7 +1583,6 @@
   <script>
     // Global user ID variable
     let currentUserId = null;
-    let disconnectionTimer = null;
 
     // Password toggle functionality
     function togglePassword(inputId) {
@@ -1539,44 +1626,9 @@
       }
     }
 
-    // Disconnection timeout management
-    function startDisconnectionTimer() {
-      // Clear existing timer
-      if (disconnectionTimer) {
-        clearTimeout(disconnectionTimer);
-      }
-
-      // Set 60-second timer
-      disconnectionTimer = setTimeout(() => {
-        // Show disconnection message
-        if (currentUserId) {
-          const statusText = document.getElementById('connection-status');
-          if (statusText) {
-            statusText.textContent = 'Disconnected - Redirecting...';
-          }
-
-          // Wait 2 seconds then redirect to home
-          setTimeout(() => {
-            returnToHome();
-          }, 2000);
-        }
-      }, 60000); // 60 seconds
-    }
-
-    // Reset the disconnection timer on user activity
-    function resetDisconnectionTimer() {
-      if (currentUserId) {
-        startDisconnectionTimer();
-      }
-    }
-
     // Return to home function
     function returnToHome() {
       currentUserId = null;
-      if (disconnectionTimer) {
-        clearTimeout(disconnectionTimer);
-        disconnectionTimer = null;
-      }
 
       // Hide chat interface and show login
       const mainContainer = document.getElementById('main-container');
@@ -1585,11 +1637,56 @@
       mainContainer.classList.add('chat-hidden');
       userPromptContainer.style.display = 'flex';
 
-      // Clear user ID input
+      // Clear all input fields including passwords
       const userIdInput = document.getElementById('userId');
+      const userPasswordInput = document.getElementById('userPassword');
+
       if (userIdInput) {
         userIdInput.value = '';
+      }
+      if (userPasswordInput) {
+        userPasswordInput.value = '';
+        userPasswordInput.type = 'password'; // Reset to password type
+        const passwordIcon = document.getElementById('userPassword-toggle-icon');
+        if (passwordIcon) {
+          passwordIcon.classList.remove('fa-eye-slash');
+          passwordIcon.classList.add('fa-eye');
+        }
+      }
+
+      // Focus on user ID input
+      if (userIdInput) {
         userIdInput.focus();
+      }
+
+      // Clear current user ID in app.js global variable
+      if (window.currentUserId) {
+        window.currentUserId = null;
+      }
+
+      // Terminate current session if it exists
+      if (window.websocket) {
+        // Mark as manual close to prevent automatic reconnection
+        window.websocket.isManualClose = true;
+        window.websocket.close();
+        window.websocket = null;
+      }
+
+      // Reset session ID to ensure clean logout
+      if (window.sessionId) {
+        window.sessionId = null;
+      }
+
+      // Clear chat messages
+      const messagesDiv = document.getElementById('messages');
+      if (messagesDiv) {
+        messagesDiv.innerHTML = '<div id="typing-indicator" class="typing-indicator"><span></span><span></span><span></span></div>';
+      }
+
+      // Clear message input
+      const messageInput = document.getElementById('message');
+      if (messageInput) {
+        messageInput.value = '';
       }
 
       // Reset status
@@ -1598,6 +1695,9 @@
       if (statusDot) statusDot.classList.remove('connected');
       if (statusText) statusText.textContent = 'Connecting...';
     }
+
+    // Make returnToHome globally accessible
+    window.returnToHome = returnToHome;
 
     // User authentication flow
     document.addEventListener('DOMContentLoaded', function () {
@@ -1611,46 +1711,48 @@
       userPromptContainer.style.display = 'flex';
       userIdInput.focus();
 
-      // User ID form submission
+      // User login form submission
       userIdForm.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const userId = userIdInput.value.trim().toLowerCase();  // Normalize to lowercase
-        if (!userId) {
-          showError('Please enter a User ID');
+        const password = document.getElementById('userPassword').value;
+
+        if (!userId || !password) {
+          showError('Please enter both User ID and password');
           return;
         }
 
-        // Validate user ID with backend
+        // Authenticate user with backend
         try {
-          const response = await fetch('/validate-user', {
+          const response = await fetch('/login', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({ user_id: userId })
+            body: JSON.stringify({
+              user_id: userId,
+              password: password
+            })
           });
 
           const result = await response.json();
 
-          if (response.ok && result.valid) {
-            // User is valid, proceed to chat
+          if (response.ok && result.success) {
+            // User is authenticated, proceed to chat
             currentUserId = userId;
             userPromptContainer.style.display = 'none';
             mainContainer.classList.remove('chat-hidden');
-
-            // Start disconnection timer
-            startDisconnectionTimer();
 
             // Initialize the chat application with the user ID
             if (window.initializeApp) {
               window.initializeApp(userId);
             }
           } else {
-            showError(result.message || 'Unregistered user. Please contact administrator.');
+            showError(result.message || 'Invalid credentials. Please try again.');
           }
         } catch (error) {
-          console.error('User validation error:', error);
+          console.error('Login error:', error);
           showError('Connection error. Please try again.');
         }
       });
@@ -1666,6 +1768,10 @@
       const backToHomeBtn = document.getElementById('backToHome');
       if (backToHomeBtn) {
         backToHomeBtn.addEventListener('click', function () {
+          // Mark this as a manual disconnect to prevent auto-reconnection
+          if (window.websocket) {
+            window.websocket.isManualClose = true;
+          }
           returnToHome();
         });
       }
@@ -1686,39 +1792,18 @@
       });
 
       // Show update form
-      updateUserCredsBtn.addEventListener('click', async function () {
+      updateUserCredsBtn.addEventListener('click', function () {
         const userId = userIdInput.value.trim().toLowerCase();
         if (!userId) {
           showError('Please enter your User ID first');
           return;
         }
 
-        // Check if user exists before allowing update
-        try {
-          const response = await fetch('/validate-user', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ user_id: userId })
-          });
-
-          const result = await response.json();
-
-          if (!response.ok || !result.valid) {
-            showError('User not found. Please register first or check your User ID.');
-            return;
-          }
-
-          // User exists, proceed to update form
-          document.getElementById('updateUserId').textContent = userId;
-          userPromptContainer.style.display = 'none';
-          updateContainer.style.display = 'flex';
-          document.getElementById('updateTodoistToken').focus();
-        } catch (error) {
-          console.error('User validation error:', error);
-          showError('Connection error. Please try again.');
-        }
+        // Store user ID for update form
+        document.getElementById('updateUserId').textContent = userId;
+        userPromptContainer.style.display = 'none';
+        updateContainer.style.display = 'flex';
+        document.getElementById('updateCurrentPassword').focus();
       });
 
       // Back to login from registration
@@ -1779,11 +1864,34 @@
         e.preventDefault();
 
         const userId = document.getElementById('regUserId').value.trim().toLowerCase();
+        const password = document.getElementById('regPassword').value;
+        const passwordConfirm = document.getElementById('regPasswordConfirm').value;
+        const location = document.getElementById('regLocation').value.trim();
         const todoistToken = document.getElementById('todoistToken').value.trim();
         const oauthFile = document.getElementById('oauthFile').files[0];
 
-        if (!userId || !todoistToken || !oauthFile) {
-          showRegistrationError('All fields are required');
+        if (!userId || !password || !location) {
+          showRegistrationError('User ID, password, and location are required');
+          return;
+        }
+
+        if (!todoistToken) {
+          showRegistrationError('Todoist API Token is required');
+          return;
+        }
+
+        if (!oauthFile) {
+          showRegistrationError('Google OAuth Credentials file is required');
+          return;
+        }
+
+        if (password !== passwordConfirm) {
+          showRegistrationError('Passwords do not match');
+          return;
+        }
+
+        if (password.length < 8) {
+          showRegistrationError('Password must be at least 8 characters long');
           return;
         }
 
@@ -1791,34 +1899,45 @@
         setButtonLoading('registerSubmitBtn', true);
 
         try {
-          // First upload the credentials file
-          const formData = new FormData();
-          formData.append('file', oauthFile);
-          formData.append('user_id', userId);
+          let oauthFilename = null;
 
-          const uploadResponse = await fetch('/upload-credentials', {
-            method: 'POST',
-            body: formData
-          });
+          // Upload credentials file if provided
+          if (oauthFile) {
+            const formData = new FormData();
+            formData.append('file', oauthFile);
+            formData.append('user_id', userId);
 
-          const uploadResult = await uploadResponse.json();
+            const uploadResponse = await fetch('/upload-credentials', {
+              method: 'POST',
+              body: formData
+            });
 
-          if (!uploadResponse.ok || !uploadResult.success) {
-            showRegistrationError(uploadResult.message || 'Failed to upload credentials file');
-            return;
+            const uploadResult = await uploadResponse.json();
+
+            if (!uploadResponse.ok || !uploadResult.success) {
+              showRegistrationError(uploadResult.message || 'Failed to upload credentials file');
+              return;
+            }
+
+            oauthFilename = uploadResult.filename;
           }
 
-          // Then register the user
+          // Register the user
+          const registerData = {
+            user_id: userId,
+            password: password,
+            password_confirm: passwordConfirm,
+            location: location,
+            todoist_api_token: todoistToken,
+            oauth_credentials_filename: oauthFilename
+          };
+
           const registerResponse = await fetch('/register-user', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-              user_id: userId,
-              todoist_api_token: todoistToken,
-              oauth_credentials_filename: uploadResult.filename
-            })
+            body: JSON.stringify(registerData)
           });
 
           const registerResult = await registerResponse.json();
@@ -1848,11 +1967,25 @@
         e.preventDefault();
 
         const userId = document.getElementById('updateUserId').textContent;
+        const currentPassword = document.getElementById('updateCurrentPassword').value;
+        const newPassword = document.getElementById('updateNewPassword').value;
+        const passwordConfirm = document.getElementById('updatePasswordConfirm').value;
+        const location = document.getElementById('updateLocation').value.trim();
         const todoistToken = document.getElementById('updateTodoistToken').value.trim();
         const oauthFile = document.getElementById('updateOauthFile').files[0];
 
-        if (!todoistToken && !oauthFile) {
-          showUpdateError('At least one field must be provided for update');
+        if (!currentPassword) {
+          showUpdateError('Current password is required');
+          return;
+        }
+
+        if (newPassword && newPassword !== passwordConfirm) {
+          showUpdateError('New passwords do not match');
+          return;
+        }
+
+        if (newPassword && newPassword.length < 8) {
+          showUpdateError('New password must be at least 8 characters long');
           return;
         }
 
@@ -1884,9 +2017,15 @@
           }
 
           // Update user credentials
-          const updateData = { user_id: userId };
-          if (todoistToken) updateData.todoist_api_token = todoistToken;
-          if (oauthFilename) updateData.oauth_credentials_filename = oauthFilename;
+          const updateData = {
+            user_id: userId,
+            current_password: currentPassword,
+            new_password: newPassword || null,
+            password_confirm: passwordConfirm || null,
+            location: location || null,
+            todoist_api_token: todoistToken || null,
+            oauth_credentials_filename: oauthFilename
+          };
 
           const updateResponse = await fetch('/update-user', {
             method: 'POST',
@@ -1899,65 +2038,11 @@
           const updateResult = await updateResponse.json();
 
           if (updateResult.success) {
-            // If OAuth credentials were updated, trigger authentication setup
-            if (oauthFilename) {
-              try {
-                console.log('Starting authentication setup for user:', userId);
-                showUpdateError('Setting up Gmail authentication...', 'info');
-
-                // Setup Gmail authentication
-                console.log('Calling Gmail auth setup...');
-                const gmailAuthResponse = await fetch('/setup-gmail-auth', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ user_id: userId })
-                });
-
-                const gmailAuthResult = await gmailAuthResponse.json();
-                console.log('Gmail auth result:', gmailAuthResult);
-
-                // Setup Calendar authentication
-                showUpdateError('Setting up Calendar authentication...', 'info');
-
-                console.log('Calling Calendar auth setup...');
-                const calendarAuthResponse = await fetch('/setup-calendar-auth', {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                  },
-                  body: JSON.stringify({ user_id: userId })
-                });
-
-                const calendarAuthResult = await calendarAuthResponse.json();
-                console.log('Calendar auth result:', calendarAuthResult);
-
-                // Show results
-                const gmailSuccess = gmailAuthResult.success;
-                const calendarSuccess = calendarAuthResult.success;
-
-                if (gmailSuccess && calendarSuccess) {
-                  showError('Credentials updated successfully! Gmail and Calendar authentication configured.', 'success');
-                } else if (gmailSuccess) {
-                  showError(`Credentials updated successfully! Gmail authentication configured. Calendar setup failed: ${calendarAuthResult.message}`, 'warning');
-                } else if (calendarSuccess) {
-                  showError(`Credentials updated successfully! Calendar authentication configured. Gmail setup failed: ${gmailAuthResult.message}`, 'warning');
-                } else {
-                  showError(`Credentials updated but authentication setup failed. Gmail: ${gmailAuthResult.message}, Calendar: ${calendarAuthResult.message}`, 'warning');
-                }
-              } catch (authError) {
-                console.error('Authentication setup error:', authError);
-                showError('Credentials updated but authentication setup failed. Please try again.', 'warning');
-              }
-            } else {
-              showError('Credentials updated successfully!', 'success');
-            }
-
             // Update successful, go back to login
             clearUpdateForm();
             updateContainer.style.display = 'none';
             userPromptContainer.style.display = 'flex';
+            showError('Credentials updated successfully!', 'success');
           } else {
             showUpdateError(updateResult.message || 'Update failed');
           }
@@ -1972,9 +2057,27 @@
 
       function clearRegistrationForm() {
         document.getElementById('regUserId').value = '';
+
+        // Clear password fields
+        const regPassword = document.getElementById('regPassword');
+        regPassword.value = '';
+        regPassword.type = 'password';
+        const regPasswordIcon = document.getElementById('regPassword-toggle-icon');
+        regPasswordIcon.classList.remove('fa-eye-slash');
+        regPasswordIcon.classList.add('fa-eye');
+
+        const regPasswordConfirm = document.getElementById('regPasswordConfirm');
+        regPasswordConfirm.value = '';
+        regPasswordConfirm.type = 'password';
+        const regPasswordConfirmIcon = document.getElementById('regPasswordConfirm-toggle-icon');
+        regPasswordConfirmIcon.classList.remove('fa-eye-slash');
+        regPasswordConfirmIcon.classList.add('fa-eye');
+
+        document.getElementById('regLocation').value = '';
+
         const todoistInput = document.getElementById('todoistToken');
         todoistInput.value = '';
-        todoistInput.type = 'password'; // Reset to password type
+        todoistInput.type = 'password';
         const todoistIcon = document.getElementById('todoistToken-toggle-icon');
         todoistIcon.classList.remove('fa-eye-slash');
         todoistIcon.classList.add('fa-eye');
@@ -1986,9 +2089,35 @@
       }
 
       function clearUpdateForm() {
+        // Clear current password
+        const currentPasswordInput = document.getElementById('updateCurrentPassword');
+        currentPasswordInput.value = '';
+        currentPasswordInput.type = 'password';
+        const currentPasswordIcon = document.getElementById('updateCurrentPassword-toggle-icon');
+        currentPasswordIcon.classList.remove('fa-eye-slash');
+        currentPasswordIcon.classList.add('fa-eye');
+
+        // Clear new password
+        const newPasswordInput = document.getElementById('updateNewPassword');
+        newPasswordInput.value = '';
+        newPasswordInput.type = 'password';
+        const newPasswordIcon = document.getElementById('updateNewPassword-toggle-icon');
+        newPasswordIcon.classList.remove('fa-eye-slash');
+        newPasswordIcon.classList.add('fa-eye');
+
+        // Clear password confirm
+        const passwordConfirmInput = document.getElementById('updatePasswordConfirm');
+        passwordConfirmInput.value = '';
+        passwordConfirmInput.type = 'password';
+        const passwordConfirmIcon = document.getElementById('updatePasswordConfirm-toggle-icon');
+        passwordConfirmIcon.classList.remove('fa-eye-slash');
+        passwordConfirmIcon.classList.add('fa-eye');
+
+        document.getElementById('updateLocation').value = '';
+
         const updateTodoistInput = document.getElementById('updateTodoistToken');
         updateTodoistInput.value = '';
-        updateTodoistInput.type = 'password'; // Reset to password type
+        updateTodoistInput.type = 'password';
         const updateTodoistIcon = document.getElementById('updateTodoistToken-toggle-icon');
         updateTodoistIcon.classList.remove('fa-eye-slash');
         updateTodoistIcon.classList.add('fa-eye');
@@ -2067,23 +2196,17 @@
           disableAnimation: false,
           enableMouseInteraction: true,
           mouseRadius: 0.1, // Reduced to stay away from bubble
-          colorNum: 10,
+          colorNum: 8,
           waveAmplitude: 0.15, // Reduced amplitude
-          waveFrequency: 10.0,
+          waveFrequency: 16.0,
           waveSpeed: 0.05,
-          pixelSize: 1
+          pixelSize: 4
         });
 
         window.ditherBackground = ditherBg;
       } else {
         console.error('Dither background container not found');
       }
-
-      // Add activity listeners to reset disconnection timer
-      const activityEvents = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart', 'click'];
-      activityEvents.forEach(event => {
-        document.addEventListener(event, resetDisconnectionTimer, true);
-      });
     });
   </script>
 </body>
