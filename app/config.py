@@ -21,3 +21,17 @@ NGROK_AUTHTOKEN = "30gwU7ijCwD6QHk62eCoqhqmFLc_6QPkfkzVkvxGyq9tK6kcx"
 
 # Audio Configuration
 DEFAULT_VOICE = "Aoede"  # Laomedeia, Kore, Aoede, Leda, and Zephyr
+
+# A2A Agent Configuration
+# A2A Agent URLs for discovery and connection
+A2A_AGENT_URLS = [
+    NGROK_URL,  # Our own A2A server accessible via ngrok
+    "http://localhost:10002",  # Example: Test agent or Karley's scheduling agent
+    "http://localhost:10004",  # Example: Another local agent
+    "http://localhost:10005",  # Example: Research or utility agent
+]
+
+# A2A Discovery and Connection Settings
+A2A_DISCOVERY_ENABLED = True
+A2A_CONNECTION_TIMEOUT = 30  # seconds
+A2A_RETRY_ATTEMPTS = 3

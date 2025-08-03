@@ -20,7 +20,7 @@ from a2a.types import (
     Task,
 )
 
-from .a2a_config import get_a2a_agent_urls, get_a2a_connection_timeout
+from .config import A2A_AGENT_URLS, A2A_CONNECTION_TIMEOUT
 
 logger = logging.getLogger(__name__)
 
@@ -31,7 +31,7 @@ class RemoteAgentConnection:
     def __init__(self, agent_card: AgentCard, agent_url: str):
         self.agent_card = agent_card
         self.agent_url = agent_url
-        timeout = get_a2a_connection_timeout()
+        timeout = A2A_CONNECTION_TIMEOUT
         self._httpx_client = httpx.AsyncClient(timeout=timeout)
         self.agent_client = A2AClient(self._httpx_client, agent_card, url=agent_url)
         logger.info(f"✅ Created connection to {agent_card.name} at {agent_url}")
@@ -62,7 +62,7 @@ class RemoteAgentManager:
         """
         logger.info(f"🔍 Discovering agents at {len(agent_urls)} URLs...")
         
-        async with httpx.AsyncClient(timeout=get_a2a_connection_timeout()) as client:
+        async with httpx.AsyncClient(timeout=A2A_CONNECTION_TIMEOUT) as client:
             for url in agent_urls:
                 try:
                     logger.info(f"🔍 Discovering agent at {url}...")
@@ -198,7 +198,7 @@ async def get_remote_agent_manager() -> RemoteAgentManager:
         _remote_agent_manager = RemoteAgentManager()
         
         # Get A2A agent URLs from configuration
-        agent_urls = get_a2a_agent_urls()
+        agent_urls = A2A_AGENT_URLS
         
         try:
             await _remote_agent_manager.discover_and_connect_agents(agent_urls)

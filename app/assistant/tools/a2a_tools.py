@@ -9,7 +9,7 @@ from typing import List, Optional
 
 from google.adk.tools.tool_context import ToolContext
 
-from ..a2a_client import get_remote_agent_manager
+from ...a2a_client import get_remote_agent_manager
 
 logger = logging.getLogger(__name__)
 
